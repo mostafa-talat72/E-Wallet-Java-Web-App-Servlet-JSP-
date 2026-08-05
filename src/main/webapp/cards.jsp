@@ -19,7 +19,7 @@
     </c:set>
     <%@ include file="WEB-INF/partials/page-head.jsp" %>
 
-    <div class="row g-4">
+    <div class="row g-4" id="cards-grid">
       <c:forEach var="card" items="${cards}">
         <div class="col-12 col-md-6 col-xl-4" data-card-widget>
           <div class="bank-card theme-${card.tone}">
@@ -73,26 +73,42 @@
           <div class="modal-body">
             <form id="card-add-form" class="validates" novalidate>
               <div class="mb-3">
-                <label class="form-label" for="m-number"><fmt:message key="cards.cardId"/></label>
-                <input type="text" class="form-control" id="m-number" name="number"
-                       placeholder="<fmt:message key="add.card.ph"/>" data-card-input required>
+                <label class="form-label"><fmt:message key="cards.cardId"/></label>
+                <div class="otp-wrap" id="m-card-parts">
+                  <div class="otp-row card-parts" dir="ltr">
+                    <input type="text" class="otp-input card-part" data-card-part maxlength="4" inputmode="numeric" aria-label="card part 1" required>
+                    <input type="text" class="otp-input card-part" data-card-part maxlength="4" inputmode="numeric" aria-label="card part 2" required>
+                    <input type="text" class="otp-input card-part" data-card-part maxlength="4" inputmode="numeric" aria-label="card part 3" required>
+                    <input type="text" class="otp-input card-part" data-card-part maxlength="4" inputmode="numeric" aria-label="card part 4" required>
+                  </div>
+                </div>
               </div>
               <div class="mb-3">
-                <label class="form-label" for="m-name"><fmt:message key="cards.name"/></label>
+                <label class="form-label"><fmt:message key="add.card.name"/></label>
                 <input type="text" class="form-control" id="m-name" name="name" placeholder="AHMED MOHAMED" required>
               </div>
               <div class="mb-3">
-                <label class="form-label" for="m-bank"><fmt:message key="cards.bankName"/></label>
+                <label class="form-label"><fmt:message key="cards.bankName"/></label>
                 <input type="text" class="form-control" id="m-bank" name="bank" placeholder="Banque Misr" required>
               </div>
-              <div class="row g-3">
+              <div class="row g-3 mb-3">
                 <div class="col-6">
-                  <label class="form-label" for="m-exp"><fmt:message key="cards.expire"/></label>
-                  <input type="text" class="form-control" id="m-exp" name="expire" placeholder="MM/YY" data-exp required>
+                  <label class="form-label"><fmt:message key="add.card.exp"/></label>
+                  <div class="d-flex gap-2">
+                    <select class="form-select" id="m-exp-m" name="expMonth" data-exp-m required>
+                      <option value="" selected disabled><fmt:message key="add.card.mm"/></option>
+                    </select>
+                    <select class="form-select" id="m-exp-y" name="expYear" data-exp-y required>
+                      <option value="" selected disabled><fmt:message key="add.card.yy"/></option>
+                    </select>
+                  </div>
                 </div>
                 <div class="col-6">
-                  <label class="form-label" for="m-cvv"><fmt:message key="cards.cvv"/></label>
-                  <input type="password" class="form-control" id="m-cvv" name="cvv" placeholder="•••" data-cvv required>
+                  <label class="form-label" for="m-cvv"><fmt:message key="add.card.cvv"/></label>
+                  <div class="input-group">
+                    <input type="password" class="form-control" id="m-cvv" name="cvv" placeholder="•••" data-cvv maxlength="3" inputmode="numeric" required>
+                    <button class="input-group-text" type="button" data-toggle-pin="m-cvv" tabindex="-1"><i class="bi bi-eye"></i></button>
+                  </div>
                 </div>
               </div>
             </form>

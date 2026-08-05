@@ -67,14 +67,14 @@
               <div class="mb-3">
                 <label class="form-label" for="cur-pin"><fmt:message key="profile.curPin"/></label>
                 <div class="input-group">
-                  <input type="password" class="form-control" id="cur-pin" name="curPin" placeholder="••••" data-pin-input inputmode="numeric" required>
+                  <input type="password" class="form-control" id="cur-pin" name="curPin" placeholder="••••••" data-pin-input inputmode="numeric" dir="ltr" required>
                   <button class="input-group-text" type="button" data-toggle-pin="cur-pin" tabindex="-1"><i class="bi bi-eye"></i></button>
                 </div>
               </div>
               <div class="mb-3">
                 <label class="form-label" for="new-pin"><fmt:message key="profile.newPin"/></label>
                 <div class="input-group">
-                  <input type="password" class="form-control" id="new-pin" name="newPin" placeholder="••••" data-pin-input data-pin-meter inputmode="numeric" required>
+                  <input type="password" class="form-control" id="new-pin" name="newPin" placeholder="••••••" data-pin-input data-pin-meter inputmode="numeric" dir="ltr" required>
                   <button class="input-group-text" type="button" data-toggle-pin="new-pin" tabindex="-1"><i class="bi bi-eye"></i></button>
                 </div>
                 <div class="pin-strong" data-pin-meter-bars>
@@ -86,7 +86,7 @@
               <div class="mb-4">
                 <label class="form-label" for="new-pin2"><fmt:message key="profile.confirmNewPin"/></label>
                 <div class="input-group">
-                  <input type="password" class="form-control" id="new-pin2" name="newPin2" placeholder="••••" data-pin-input inputmode="numeric" required>
+                  <input type="password" class="form-control" id="new-pin2" name="newPin2" placeholder="••••••" data-pin-input inputmode="numeric" dir="ltr" required>
                   <button class="input-group-text" type="button" data-toggle-pin="new-pin2" tabindex="-1"><i class="bi bi-eye"></i></button>
                 </div>
               </div>

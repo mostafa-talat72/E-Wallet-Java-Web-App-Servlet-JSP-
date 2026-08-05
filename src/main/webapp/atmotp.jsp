@@ -25,18 +25,17 @@
       </div>
     </div>
 
-    <div class="stepper mb-4" data-stepper>
-      <div class="step active" data-step-dot>
-        <div class="step-circle"><i class="bi bi-check-lg"></i>1</div>
-        <div class="step-label"><fmt:message key="withdraw.step1"/></div>
-      </div>
-      <div class="step" data-step-dot>
-        <div class="step-circle"><i class="bi bi-check-lg"></i>2</div>
-        <div class="step-label"><fmt:message key="withdraw.code.title"/></div>
-      </div>
-    </div>
-
     <div data-stepper>
+      <div class="stepper mb-4">
+        <div class="step active" data-step-dot>
+          <div class="step-circle"><i class="bi bi-check-lg"></i>1</div>
+          <div class="step-label"><fmt:message key="withdraw.step1"/></div>
+        </div>
+        <div class="step" data-step-dot>
+          <div class="step-circle"><i class="bi bi-check-lg"></i>2</div>
+          <div class="step-label"><fmt:message key="withdraw.code.title"/></div>
+        </div>
+      </div>
 
       <div class="panel step-panel">
         <div class="panel-body">
@@ -53,11 +52,21 @@
               <button type="button" class="btn btn-outline-line btn-sm chip" data-value="5000">5,000</button>
             </div>
 
-            <label class="form-label" for="otp-pin"><fmt:message key="withdraw.pinConfirm"/></label>
-            <div class="input-group">
-              <input type="password" class="form-control form-control-lg" id="otp-pin" name="pin"
-                     placeholder="••••" data-pin-input inputmode="numeric" required>
-              <button class="input-group-text" type="button" data-toggle-pin="otp-pin" tabindex="-1"><i class="bi bi-eye"></i></button>
+            <div class="d-flex align-items-center justify-content-between mb-1">
+              <label class="form-label mb-0"><fmt:message key="withdraw.pinConfirm"/></label>
+              <button type="button" class="btn btn-sm btn-outline-line" data-toggle-otp aria-label="Show PIN">
+                <i class="bi bi-eye"></i>
+              </button>
+            </div>
+            <div class="otp-wrap">
+              <div class="otp-row" dir="ltr">
+                <input type="password" class="otp-input" data-otp maxlength="1" inputmode="numeric" dir="ltr">
+                <input type="password" class="otp-input" data-otp maxlength="1" inputmode="numeric" dir="ltr">
+                <input type="password" class="otp-input" data-otp maxlength="1" inputmode="numeric" dir="ltr">
+                <input type="password" class="otp-input" data-otp maxlength="1" inputmode="numeric" dir="ltr">
+                <input type="password" class="otp-input" data-otp maxlength="1" inputmode="numeric" dir="ltr">
+                <input type="password" class="otp-input" data-otp maxlength="1" inputmode="numeric" dir="ltr">
+              </div>
             </div>
 
             <div class="d-flex justify-content-end mt-4">

@@ -65,7 +65,7 @@
           <label class="form-label" for="pin"><fmt:message key="common.pin"/></label>
           <div class="input-group input-group-lg">
             <input type="password" class="form-control" id="pin" name="pin"
-                   placeholder="••••" data-pin-input inputmode="numeric" required>
+                   placeholder="••••••" data-pin-input inputmode="numeric" dir="ltr" required>
             <button class="input-group-text" type="button" data-toggle-pin="pin" tabindex="-1">
               <i class="bi bi-eye"></i>
             </button>

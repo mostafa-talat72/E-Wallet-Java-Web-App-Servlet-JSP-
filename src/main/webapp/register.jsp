@@ -76,7 +76,7 @@
             <label class="form-label" for="r-pin"><fmt:message key="common.pin"/></label>
             <div class="input-group">
               <input type="password" class="form-control" id="r-pin" name="pin"
-                     placeholder="••••" data-pin-input data-pin-meter inputmode="numeric" required>
+                     placeholder="••••••" data-pin-input data-pin-meter inputmode="numeric" dir="ltr" required>
               <button class="input-group-text" type="button" data-toggle-pin="r-pin" tabindex="-1">
                 <i class="bi bi-eye"></i>
               </button>
@@ -90,7 +90,7 @@
             <label class="form-label" for="r-pin2"><fmt:message key="auth.confirmPin"/></label>
             <div class="input-group">
               <input type="password" class="form-control" id="r-pin2" name="pinConfirm"
-                     placeholder="••••" data-pin-input inputmode="numeric" required>
+                     placeholder="••••••" data-pin-input inputmode="numeric" dir="ltr" required>
               <button class="input-group-text" type="button" data-toggle-pin="r-pin2" tabindex="-1">
                 <i class="bi bi-eye"></i>
               </button>

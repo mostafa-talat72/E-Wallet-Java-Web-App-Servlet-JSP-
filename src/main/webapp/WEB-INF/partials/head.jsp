@@ -32,7 +32,10 @@ window.APPMSG = {
   medium: '<fmt:message key="profile.medium"/>',
   strong: '<fmt:message key="profile.strong"/>',
   active: '<fmt:message key="common.active"/>',
-  inactive: '<fmt:message key="common.inactive"/>'
+  inactive: '<fmt:message key="common.inactive"/>',
+  cardsHolder: '<fmt:message key="cards.holder"/>',
+  cardsExpires: '<fmt:message key="cards.expires"/>',
+  cardDeleteConfirm: '<fmt:message key="cards.deleteConfirm"/>'
 };
 </script>
 </head>

@@ -17,22 +17,22 @@
     </c:set>
     <%@ include file="WEB-INF/partials/page-head.jsp" %>
 
-    <div class="stepper mb-4" data-stepper>
-      <div class="step active" data-step-dot>
-        <div class="step-circle"><i class="bi bi-check-lg"></i>1</div>
-        <div class="step-label"><fmt:message key="send.recipient"/></div>
-      </div>
-      <div class="step" data-step-dot>
-        <div class="step-circle"><i class="bi bi-check-lg"></i>2</div>
-        <div class="step-label"><fmt:message key="send.review"/></div>
-      </div>
-      <div class="step" data-step-dot>
-        <div class="step-circle"><i class="bi bi-check-lg"></i>3</div>
-        <div class="step-label"><fmt:message key="send.otp.title"/></div>
-      </div>
-    </div>
-
     <div data-stepper>
+      <div class="stepper mb-4">
+        <div class="step active" data-step-dot>
+          <div class="step-circle"><i class="bi bi-check-lg"></i>1</div>
+          <div class="step-label"><fmt:message key="send.recipient"/></div>
+        </div>
+        <div class="step" data-step-dot>
+          <div class="step-circle"><i class="bi bi-check-lg"></i>2</div>
+          <div class="step-label"><fmt:message key="send.review"/></div>
+        </div>
+        <div class="step" data-step-dot>
+          <div class="step-circle"><i class="bi bi-check-lg"></i>3</div>
+          <div class="step-label"><fmt:message key="send.otp.title"/></div>
+        </div>
+      </div>
+
       <div class="panel step-panel">
         <div class="panel-body">
           <form class="validates" novalidate>
@@ -121,11 +121,18 @@
               <fmt:message key="send.otp.desc"/>
             </p>
             <p class="text-muted small mb-3"><fmt:message key="send.preview.to"/> <strong style="direction:ltr" id="otp-phone" data-fill="#recipient">—</strong></p>
-            <div class="otp-row">
-              <input type="text" class="otp-input" data-otp maxlength="1" inputmode="numeric">
-              <input type="text" class="otp-input" data-otp maxlength="1" inputmode="numeric">
-              <input type="text" class="otp-input" data-otp maxlength="1" inputmode="numeric">
-              <input type="text" class="otp-input" data-otp maxlength="1" inputmode="numeric">
+            <div class="otp-wrap">
+              <div class="otp-row" dir="ltr">
+                <input type="password" class="otp-input" data-otp maxlength="1" inputmode="numeric" dir="ltr">
+                <input type="password" class="otp-input" data-otp maxlength="1" inputmode="numeric" dir="ltr">
+                <input type="password" class="otp-input" data-otp maxlength="1" inputmode="numeric" dir="ltr">
+                <input type="password" class="otp-input" data-otp maxlength="1" inputmode="numeric" dir="ltr">
+                <input type="password" class="otp-input" data-otp maxlength="1" inputmode="numeric" dir="ltr">
+                <input type="password" class="otp-input" data-otp maxlength="1" inputmode="numeric" dir="ltr">
+              </div>
+              <button type="button" class="btn btn-sm btn-outline-line mt-2" data-toggle-otp aria-label="Show PIN">
+                <i class="bi bi-eye"></i>
+              </button>
             </div>
             <p class="text-muted small"><fmt:message key="common.pin"/></p>
             <div class="d-flex justify-content-center gap-3 mb-4">
@@ -136,7 +143,7 @@
                 <fmt:message key="common.confirm"/> <i class="bi bi-check-lg"></i>
               </button>
             </div>
-            <p class="text-muted small mt-2 mb-0" style="direction:ltr">Demo PIN: <b>1234</b></p>
+            <p class="text-muted small mt-2 mb-0" style="direction:ltr">Demo PIN: <b>123456</b></p>
           </div>
         </div>
       </div>

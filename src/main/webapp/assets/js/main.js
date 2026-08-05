@@ -48,11 +48,107 @@
         btn.querySelector("i").className = show ? "bi bi-eye-slash" : "bi bi-eye";
       });
     });
+    APP.sel("[data-toggle-otp]").forEach(function (btn) {
+      btn.addEventListener("click", function () {
+        var scope = btn.closest(".step-panel") || btn.closest(".otp-wrap");
+        var boxes = scope ? scope.querySelectorAll("[data-otp]") : [];
+        var show = false;
+        boxes.forEach(function (b) { if (b.type === "password") show = true; });
+        boxes.forEach(function (b) { b.type = show ? "text" : "password"; });
+        var i = btn.querySelector("i");
+        if (i) i.className = show ? "bi bi-eye-slash" : "bi bi-eye";
+      });
+    });
   }
 
   function maskDigits(input, max) {
     var limit = parseInt(input.getAttribute("data-max"), 10) || max;
     input.value = input.value.replace(/\D/g, "").slice(0, limit);
+  }
+
+  function initCardParts() {
+    APP.sel("input[data-card-part]").forEach(function (part, i, arr) {
+      part.addEventListener("input", function () {
+        var v = part.value.replace(/\D/g, "").slice(0, 4);
+        part.value = v;
+        part.classList.toggle("has-value", v.length === 4);
+        if (v.length === 4 && arr[i + 1]) arr[i + 1].focus();
+      });
+      part.addEventListener("keydown", function (e) {
+        if (e.key === "Backspace" && !part.value && arr[i - 1]) {
+          arr[i - 1].focus();
+          arr[i - 1].value = "";
+          arr[i - 1].classList.remove("has-value");
+        }
+        if ((e.key === "ArrowRight" || e.key === " ") && part.value && arr[i + 1]) {
+          e.preventDefault();
+          arr[i + 1].focus();
+        }
+        if (e.key === "ArrowLeft" && arr[i - 1]) {
+          e.preventDefault();
+          arr[i - 1].focus();
+        }
+      });
+      part.addEventListener("paste", function (e) {
+        e.preventDefault();
+        var digits = (e.clipboardData || window.clipboardData).getData("text").replace(/\D/g, "").slice(0, 16);
+        if (!digits) return;
+        var start = i;
+        digits.split("").forEach(function (d, k) {
+          var box = arr[start + Math.floor(k / 4)];
+          if (box) {
+            box.value = d;
+            box.classList.add("has-value");
+          }
+        });
+        var lastBox = arr[start + Math.floor(Math.min(digits.length, 16) / 4) - 1] || arr[start];
+        if (lastBox) lastBox.focus();
+        arr.forEach(function (b, k) {
+          if (k >= start && k < start + 4 && !b.value) b.classList.remove("has-value");
+        });
+      });
+    });
+  }
+
+  function initExpirySelects() {
+    APP.sel("[data-exp-m]").forEach(function (mSel) {
+      var ySel = mSel.closest(".d-flex").querySelector("[data-exp-y]");
+      if (!ySel) return;
+      var phM = mSel.firstElementChild;
+      var phY = ySel.firstElementChild;
+
+      function build() {
+        var now = new Date();
+        var curYear = now.getFullYear();
+        var curMonth = now.getMonth() + 1;
+        var selM = parseInt(mSel.value, 10) || 0;
+        var selY = parseInt(ySel.value, 10) || 0;
+
+        var minYear = (selM && selM <= curMonth) ? curYear + 1 : curYear;
+        var years = "";
+        for (var y = minYear; y <= curYear + 8; y++) {
+          years += '<option value="' + y + '">' + y + '</option>';
+        }
+        ySel.innerHTML = years;
+        if (phY && phY.hasAttribute("disabled")) ySel.insertBefore(phY, ySel.firstChild);
+        if (selY && selY >= minYear) ySel.value = String(selY);
+
+        var maxM = selY === curYear ? curMonth : 0;
+        var months = "";
+        for (var m = maxM + 1; m <= 12; m++) {
+          var label = (m < 10 ? "0" : "") + m;
+          months += '<option value="' + label + '">' + label + '</option>';
+        }
+        mSel.innerHTML = months;
+        if (phM && phM.hasAttribute("disabled")) mSel.insertBefore(phM, mSel.firstChild);
+        var selMpad = selM && (maxM === 0 || selM > maxM) ? ((selM < 10 ? "0" : "") + selM) : "";
+        mSel.value = selMpad;
+      }
+
+      mSel.addEventListener("change", build);
+      ySel.addEventListener("change", build);
+      build();
+    });
   }
 
   function initMasks() {
@@ -76,7 +172,7 @@
       el.addEventListener("input", function () { maskDigits(el, 3); });
     });
     APP.sel("[data-pin-input]").forEach(function (el) {
-      el.addEventListener("input", function () { maskDigits(el, 4); });
+      el.addEventListener("input", function () { maskDigits(el, 6); });
     });
   }
 
@@ -127,7 +223,7 @@
         var boxes = row.querySelectorAll("[data-otp]");
         var code = "";
         boxes.forEach(function (b) { code += b.value; });
-        if (code === "1234") ok = true;
+        if (code === "123456") ok = true;
         if (!ok) {
           APP.toast(APPMSG.wrongPin, "error");
           return;
@@ -168,7 +264,13 @@
   function fillPreviews(stepper) {
     stepper.querySelectorAll("[data-fill]").forEach(function (el) {
       var input = document.querySelector(el.getAttribute("data-fill"));
-      el.textContent = input && input.value ? input.value : "—";
+      if (input && input.value) {
+        el.textContent = input.value;
+        if (input.type === "number") el.classList.add("amount-selected");
+      } else {
+        el.textContent = "—";
+        el.classList.remove("amount-selected");
+      }
     });
   }
 
@@ -199,6 +301,21 @@
             if (!form.checkValidity()) {
               form.reportValidity();
               APP.toast(APPMSG.invalid, "error");
+              return;
+            }
+          }
+          var otpBox = panel && panel.querySelector(".otp-row [data-otp]");
+          if (otpBox) {
+            var otpRow = otpBox.closest(".otp-row");
+            var boxes = otpRow.querySelectorAll("[data-otp]");
+            var code = "";
+            boxes.forEach(function (b) { code += b.value; });
+            if (code.length < boxes.length) {
+              APP.toast(APPMSG.invalid, "error");
+              return;
+            }
+            if (code !== "123456") {
+              APP.toast(APPMSG.wrongPin, "error");
               return;
             }
           }
@@ -250,16 +367,15 @@
     });
     function typeMatches(type, filter) {
       if (filter === "all") return true;
-      if (filter === "income") return type === "deposit";
-      if (filter === "expense") return type === "transfer" || type === "withdraw" || type === "payment";
       return type === filter;
     }
     function applyTxFilter(text, filter) {
       var visible = 0;
       list.querySelectorAll("[data-tx-row]").forEach(function (row) {
         var type = row.getAttribute("data-type");
+        var amount = parseFloat(row.getAttribute("data-amount")) || 0;
         var hay = (row.textContent || "").toLowerCase();
-        var matchesFilter = typeMatches(type, filter);
+        var matchesFilter = filter === "receive" ? amount > 0 : typeMatches(type, filter);
         var matchesText = !text || hay.indexOf(text.toLowerCase()) !== -1;
         var show = matchesFilter && matchesText;
         row.style.display = show ? "" : "none";
@@ -306,24 +422,6 @@
           navigator.clipboard.writeText(txt).then(function () { APP.toast(APPMSG.copied); });
         } else {
           APP.toast(APPMSG.copied);
-        }
-      });
-    });
-  }
-
-  function initDeleteConfirm() {
-    APP.sel("[data-delete-confirm]").forEach(function (btn) {
-      btn.addEventListener("click", function (e) {
-        var msg = btn.getAttribute("data-delete-confirm");
-        if (typeof confirm === "function" && !window.confirm(msg)) {
-          e.preventDefault();
-          return;
-        }
-        var card = btn.closest("[data-card-widget]");
-        if (card) {
-          btn.removeEventListener("click", this);
-          card.remove();
-          APP.toast(APPMSG.cardRemoved);
         }
       });
     });
@@ -445,35 +543,30 @@
     });
   }
 
-  function initAddConfirm() {
-    APP.sel("[data-add-confirm]").forEach(function (btn) {
-      btn.addEventListener("click", function () {
-        var amount = document.getElementById("amount");
-        if (!amount || !amount.value || parseFloat(amount.value) <= 0) {
-          APP.toast(APPMSG.invalid, "error");
-          if (amount) amount.focus();
-          return;
+  function bindCardWidget(widget) {
+    var sw = widget.querySelector("[data-card-toggle]");
+    if (sw) {
+      sw.addEventListener("change", function () {
+        var badge = widget.querySelector(".badge");
+        if (!badge) return;
+        if (sw.checked) {
+          badge.className = "badge badge-success";
+          badge.innerHTML = '<i class="bi bi-check-circle"></i> ' + (window.APPMSG ? APPMSG.active : "Active");
+        } else {
+          badge.className = "badge badge-neutral";
+          badge.textContent = window.APPMSG ? APPMSG.inactive : "Inactive";
         }
-        var form = document.getElementById("card-form");
-        if (form && !form.checkValidity()) {
-          form.reportValidity();
-          APP.toast(APPMSG.invalid, "error");
-          return;
-        }
-        fillPreviews(document);
-        var cardPanel = document.getElementById("card-panel");
-        var amountPanel = document.getElementById("amount-panel");
-        if (cardPanel) cardPanel.classList.add("d-none");
-        if (amountPanel) amountPanel.classList.add("d-none");
-        var method = document.getElementById("ok-method");
-        var lbl = document.getElementById("ok-method-label");
-        if (method && lbl) method.textContent = lbl.textContent.trim();
-        var success = document.querySelector("#add-success");
-        if (success) success.classList.remove("d-none");
-        window.scrollTo({ top: 0, behavior: "smooth" });
-        APP.toast(APPMSG.saved);
       });
-    });
+    }
+    var del = widget.querySelector("[data-delete-confirm]");
+    if (del) {
+      del.addEventListener("click", function () {
+        var msg = del.getAttribute("data-delete-confirm");
+        if (typeof confirm === "function" && !window.confirm(msg)) return;
+        widget.remove();
+        APP.toast(APPMSG.cardRemoved);
+      });
+    }
   }
 
   function initCardModals() {
@@ -486,6 +579,55 @@
             APP.toast(APPMSG.invalid, "error");
             return;
           }
+          var parts = form.querySelectorAll("[data-card-part]");
+          var number = "";
+          parts.forEach(function (p) { number += p.value; });
+          var name = form.name.value.trim();
+          var bank = form.bank.value.trim();
+          var expM = form.expMonth.value;
+          var expY = form.expYear.value;
+          var expire = (expM ? ("0" + expM).slice(-2) : "MM") + "/" + (expY ? String(expY).slice(-2) : "YY");
+          var tones = ["blue", "violet", "emerald"];
+          var grid = document.getElementById("cards-grid");
+          var count = grid ? grid.querySelectorAll("[data-card-widget]").length : 0;
+          var tone = tones[count % tones.length];
+          var widget = document.createElement("div");
+          widget.className = "col-12 col-md-6 col-xl-4";
+          widget.setAttribute("data-card-widget", "");
+          widget.innerHTML =
+            '<div class="bank-card theme-' + tone + '">' +
+              '<div class="card-bg"></div>' +
+              '<div class="card-top">' +
+                '<span class="card-brand"><i class="bi bi-wallet2"></i> E-Wallet</span>' +
+                '<span class="badge badge-white">' + bank + '</span>' +
+              '</div>' +
+              '<div class="card-number" style="direction:ltr">' + number.slice(0, 4) + ' •••• •••• ' + number.slice(-4) + '</div>' +
+              '<div class="card-bottom">' +
+                '<div class="card-holder">' +
+                  '<small>' + (APPMSG.cardsHolder || "Cardholder") + '</small>' +
+                  '<strong>' + name + '</strong>' +
+                '</div>' +
+                '<div class="text-end">' +
+                  '<small class="d-block opacity-75" style="font-size:.62rem">' + (APPMSG.cardsExpires || "Expires") + '</small>' +
+                  '<strong style="font-family:monospace;letter-spacing:1px">' + expire + '</strong>' +
+                '</div>' +
+              '</div>' +
+            '</div>' +
+            '<div class="d-flex align-items-center justify-content-between mt-3">' +
+              '<span class="badge badge-success"><i class="bi bi-check-circle"></i> ' + (APPMSG.active || "Active") + '</span>' +
+              '<div class="d-flex gap-2">' +
+                '<label class="form-check form-switch m-0" title="toggle">' +
+                  '<input class="form-check-input" type="checkbox" data-card-toggle checked>' +
+                '</label>' +
+                '<button type="button" class="btn btn-danger-soft btn-icon-sm" data-delete-confirm="' + (APPMSG.cardDeleteConfirm || "Remove card?") + '">' +
+                  '<i class="bi bi-trash"></i>' +
+                '</button>' +
+              '</div>' +
+            '</div>';
+          if (grid) {
+            grid.insertBefore(widget, grid.firstChild);
+            bindCardWidget(widget);
+          }
           form.reset();
         }
         var modalEl = document.getElementById("addCardModal");
@@ -496,20 +638,7 @@
         APP.toast(APPMSG.cardAdded);
       });
     });
-    APP.sel("[data-card-toggle]").forEach(function (sw) {
-      sw.addEventListener("change", function () {
-        var widget = sw.closest("[data-card-widget]");
-        if (!widget) return;
-        var badge = widget.querySelector(".badge");
-        if (sw.checked) {
-          badge.className = "badge badge-success";
-          badge.innerHTML = '<i class="bi bi-check-circle"></i> ' + (window.APPMSG ? APPMSG.active : "Active");
-        } else {
-          badge.className = "badge badge-neutral";
-          badge.textContent = window.APPMSG ? APPMSG.inactive : "Inactive";
-        }
-      });
-    });
+    APP.sel("[data-card-widget]").forEach(bindCardWidget);
   }
 
   function initSaveForms() {
@@ -544,20 +673,20 @@
     initSidebar();
     initTogglePin();
     initMasks();
+    initCardParts();
+    initExpirySelects();
     initOtps();
     initSteps();
     initQuickAmounts();
     initTxFilters();
     initNotif();
     initCopy();
-    initDeleteConfirm();
     initPinStrength();
     initBalanceToggle();
     initChart();
     initMethodTabs();
     initContactChips();
     initOtpVerify();
-    initAddConfirm();
     initCardModals();
     initSaveForms();
   });

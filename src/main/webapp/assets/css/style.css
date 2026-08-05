@@ -357,14 +357,14 @@ a{text-decoration:none}
 }
 .step:first-child::before{content:none}
 .step.active .step-circle{background:var(--gradient);border-color:transparent;color:#fff;box-shadow:0 8px 18px -6px rgba(99,60,235,.6)}
-.step.active .step-label{color:var(--text)}
+.step.active .step-label{color:var(--primary)}
 .step.done .step-circle{background:var(--success);border-color:transparent;color:#fff}
 .step.done .step-circle i{display:inline}
 .step.done .step-label{color:var(--success)}
 .step.done::before{background:var(--success)}
 
 /* ============ OTP ============ */
-.otp-row{display:flex;gap:.6rem;justify-content:center;margin:1.4rem 0}
+.otp-row{display:flex;gap:.6rem;justify-content:center;margin:1.4rem 0;direction:ltr}
 .otp-input{
   width:52px;height:60px;text-align:center;font-size:1.5rem;font-weight:800;
   border:1.5px solid var(--border);border-radius:14px;background:var(--surface);color:var(--text);
@@ -372,10 +372,18 @@ a{text-decoration:none}
 }
 .otp-input:focus{border-color:var(--primary);box-shadow:0 0 0 4px rgba(37,99,235,.12)}
 .otp-input.has-value{border-color:var(--primary)}
+.card-parts{justify-content:center}
+.card-parts .card-part{width:78px;height:62px;font-size:1.4rem;letter-spacing:3px;border-radius:16px;box-shadow:0 2px 10px rgba(0,0,0,.05)}
+.card-parts .card-part:focus{transform:translateY(-2px);box-shadow:0 6px 18px -4px rgba(37,99,235,.25)}
+.card-parts .card-part.has-value{background:var(--gradient-soft)}
 .timer-chip{
   display:inline-flex;align-items:center;gap:.5rem;background:var(--gradient-soft);color:var(--primary-dark);
   font-weight:800;font-size:.85rem;padding:.45rem 1rem;border-radius:20px;
 }
+.chip{border-color:var(--border);transition:all .18s ease}
+.chip:hover{border-color:var(--primary);color:var(--primary)}
+.chip.selected{border-color:var(--primary);color:var(--primary);background:var(--gradient-soft);box-shadow:0 2px 10px rgba(37,99,235,.12)}
+.amount-selected{color:var(--success);font-weight:800}
 .otp-error{color:var(--danger);font-weight:700;font-size:.85rem;display:none}
 
 /* ============ BANK CARD ============ */

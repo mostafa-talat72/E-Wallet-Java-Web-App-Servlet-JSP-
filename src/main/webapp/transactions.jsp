@@ -25,9 +25,10 @@
       <div class="panel-head flex-wrap gap-3">
         <div class="filter-pills" id="txFilterPills">
           <button type="button" class="filter-pill active" data-filter-pill="all"><fmt:message key="tx.filter.all"/></button>
-          <button type="button" class="filter-pill" data-filter-pill="income"><fmt:message key="tx.filter.income"/></button>
-          <button type="button" class="filter-pill" data-filter-pill="expense"><fmt:message key="tx.filter.expense"/></button>
+          <button type="button" class="filter-pill" data-filter-pill="withdraw"><fmt:message key="tx.filter.withdraw"/></button>
+          <button type="button" class="filter-pill" data-filter-pill="deposit"><fmt:message key="tx.filter.deposit"/></button>
           <button type="button" class="filter-pill" data-filter-pill="transfer"><fmt:message key="tx.filter.transfer"/></button>
+          <button type="button" class="filter-pill" data-filter-pill="receive"><fmt:message key="tx.filter.receive"/></button>
         </div>
         <div class="topbar-search d-none d-md-flex" style="min-width:300px">
           <i class="bi bi-search"></i>
@@ -39,7 +40,8 @@
           <thead>
             <tr>
               <th><fmt:message key="common.type"/></th>
-              <th><fmt:message key="send.preview.to"/></th>
+              <th><fmt:message key="common.from"/></th>
+              <th><fmt:message key="common.to"/></th>
               <th><fmt:message key="common.ref"/></th>
               <th><fmt:message key="common.date"/></th>
               <th class="text-end"><fmt:message key="common.amount"/></th>
@@ -48,7 +50,7 @@
           </thead>
           <tbody>
             <c:forEach var="tx" items="${transactions}">
-              <tr data-tx-row data-type="${tx.type}">
+              <tr data-tx-row data-type="${tx.type}" data-amount="${tx.amount}">
                 <td>
                   <div class="tx-cell">
                     <span class="tx-icon ${tx.amount > 0 ? 'in' : tx.status == 'failed' ? 'failed' : tx.status == 'pending' ? 'pending' : 'out'}">
@@ -57,7 +59,8 @@
                     <strong class="small"><fmt:message key="tx.type.${tx.type}"/></strong>
                   </div>
                 </td>
-                <td><span class="small" style="direction:ltr;display:inline-block">${tx.other}</span></td>
+                <td><span class="small" style="direction:ltr;display:inline-block">${tx.from}</span></td>
+                <td><span class="small" style="direction:ltr;display:inline-block">${tx.to}</span></td>
                 <td><span class="ref-code">${tx.ref}</span></td>
                 <td><span class="small" style="direction:ltr;display:inline-block">${tx.date}</span></td>
                 <td class="text-end">

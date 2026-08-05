@@ -4,7 +4,6 @@
 <%@ include file="WEB-INF/partials/lang.jsp" %>
 <c:set var="pageTitle"><fmt:message key="nav.dashboard"/></c:set>
 <c:set var="activeMenu" value="home"/>
-<c:set var="needChart" value="true"/>
 <%@ include file="WEB-INF/partials/demo-data.jsp" %>
 <%@ include file="WEB-INF/partials/head.jsp" %>
 <%@ include file="WEB-INF/partials/navbar.jsp" %>
@@ -30,7 +29,7 @@
     </div>
 
     <div class="row g-4">
-      <div class="col-12 col-xl-7">
+      <div class="col-12">
         <div class="balance-hero">
           <div class="hero-body">
             <div class="hero-label">
@@ -71,47 +70,6 @@
               <a href="${appURL}atmotp.jsp${qLang}" class="btn btn-light-soft">
                 <i class="bi bi-cash-stack"></i> <fmt:message key="dash.quick.withdraw"/>
               </a>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <div class="col-12 col-xl-5">
-        <div class="row g-4 h-100">
-          <div class="col-6">
-            <div class="stat-card h-100">
-              <div class="stat-icon income"><i class="bi bi-arrow-down-left"></i></div>
-              <div class="stat-info">
-                <div class="stat-label"><fmt:message key="dash.income"/></div>
-                <div class="stat-value">4,600.00</div>
-                <span class="stat-trend trend-up"><i class="bi bi-graph-up-arrow"></i> +12%</span>
-              </div>
-            </div>
-          </div>
-          <div class="col-6">
-            <div class="stat-card h-100">
-              <div class="stat-icon expense"><i class="bi bi-arrow-up-right"></i></div>
-              <div class="stat-info">
-                <div class="stat-label"><fmt:message key="dash.expense"/></div>
-                <div class="stat-value">1,295.50</div>
-                <span class="stat-trend trend-down"><i class="bi bi-graph-down-arrow"></i> -3%</span>
-              </div>
-            </div>
-          </div>
-          <div class="col-12">
-            <div class="panel h-100">
-              <div class="panel-head">
-                <h5 class="panel-title"><i class="bi bi-graph-up-arrow"></i> <fmt:message key="dash.chart"/></h5>
-              </div>
-              <div class="panel-body">
-                <div class="chart-wrap">
-                  <canvas id="cashflowChart"
-                          data-income="<fmt:message key="dash.income"/>"
-                          data-expense="<fmt:message key="dash.expense"/>"
-                          data-d1="07/28" data-d2="07/29" data-d3="07/30" data-d4="07/31"
-                          data-d5="08/01" data-d6="08/02" data-d7="08/03"></canvas>
-                </div>
-              </div>
             </div>
           </div>
         </div>
