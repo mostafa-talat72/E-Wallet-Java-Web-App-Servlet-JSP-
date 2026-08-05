@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="E-Wallet ATM Simulator - deposit and withdraw with your phone number and transaction code">
+  <title>E-Wallet ATM</title>
+  <link rel="icon" href="../assets/img/favicon.svg" type="image/svg+xml">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="atm.css">
+</head>
+<body>
+
+  <button class="lang-toggle" id="lang-btn" type="button">العربية</button>
+
+  <div class="atm-machine">
+    <div class="atm-vents"><span></span><span></span><span></span><span></span><span></span></div>
+
+    <div class="atm-brand"><span class="dot"></span><span id="brand-label">E-Wallet ATM</span></div>
+
+    <!-- ================= SCREEN ================= -->
+    <div class="atm-screen">
+      <div class="screen-inner" id="atm-screen">
+
+        <!-- idle / welcome -->
+        <div class="screen active" id="scr-idle">
+          <div class="sc-title"><span class="sc-symbol">&#9883;</span> <span id="idle-title">Welcome</span></div>
+          <div class="sc-center">
+            <div class="entry-big">&#9654;&#9654;&#9654;</div>
+            <p class="entry-hint" id="idle-sub">Insert your card to start</p>
+          </div>
+          <div class="sc-actions">
+            <button class="sc-btn" type="button" id="action-idle-enter">ENTER</button>
+          </div>
+        </div>
+
+        <!-- card inserting -->
+        <div class="screen" id="scr-carding">
+          <div class="sc-title"><span class="sc-symbol">&#128179;</span> <span id="carding-msg">Inserting card...</span></div>
+          <div class="sc-center">
+            <div class="spinner"></div>
+          </div>
+        </div>
+
+        <!-- choose transaction -->
+        <div class="screen" id="scr-choose">
+          <div class="sc-title"><span class="sc-symbol">&#9881;</span> <span id="choose-title">Choose transaction</span></div>
+          <div class="sc-center" style="justify-content:flex-start">
+            <div class="choices">
+              <button class="choice" type="button" id="action-deposit">
+                <span class="ci">&#8595;</span>
+                <span><strong id="d-label">Deposit</strong><small id="d-desc">Cash you bring to the ATM</small></span>
+              </button>
+              <button class="choice" type="button" id="action-withdraw">
+                <span class="ci">&#8593;</span>
+                <span><strong id="w-label">Withdraw</strong><small id="w-desc">Cash the ATM gives you</small></span>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- phone entry -->
+        <div class="screen" id="scr-phone">
+          <div class="sc-title"><span class="sc-symbol">&#9742;</span> <span id="phone-title">Enter phone number</span></div>
+          <div class="sc-center" style="justify-content:flex-start">
+            <div class="entry-big" id="entry-phone">&nbsp;</div>
+            <div class="dots"></div>
+            <p class="entry-hint" id="phone-sub">The number registered on your E-Wallet</p>
+          </div>
+          <div class="sc-actions">
+            <button class="sc-btn ghost" type="button" id="action-phone-cancel">CANCEL</button>
+            <button class="sc-btn" type="button" id="action-phone-ok">OK</button>
+          </div>
+        </div>
+
+        <!-- code entry -->
+        <div class="screen" id="scr-code">
+          <div class="sc-title"><span class="sc-symbol">&#9673;</span> <span id="code-title">Enter transaction code</span></div>
+          <div class="sc-center" style="justify-content:flex-start">
+            <div class="entry-big" id="entry-code">&nbsp;</div>
+            <div class="dots"></div>
+            <p class="entry-hint" id="code-sub">The 6-digit code shown in your wallet</p>
+          </div>
+          <div class="sc-actions">
+            <button class="sc-btn ghost" type="button" id="action-code-cancel">CANCEL</button>
+            <button class="sc-btn" type="button" id="action-code-ok">OK</button>
+          </div>
+        </div>
+
+        <!-- processing -->
+        <div class="screen" id="scr-processing">
+          <div class="sc-title"><span class="sc-symbol">&#9201;</span> <span id="proc-title">Processing</span></div>
+          <div class="sc-center">
+            <div class="spinner"></div>
+            <p class="proc-line" id="proc-line"></p>
+          </div>
+        </div>
+
+        <!-- result (success or failed) -->
+        <div class="screen" id="scr-result">
+          <div class="sc-center">
+            <div class="result-icon ok" id="res-icon">&#10003;</div>
+            <h2 class="sc-title" style="margin:0" id="res-title">Take your cash</h2>
+            <p class="sc-sub" id="res-desc" style="margin:0">This withdrawal is complete</p>
+            <p class="sc-sub" id="res-extra" style="margin:0;color:var(--amber)"></p>
+          </div>
+          <div class="sc-actions">
+            <button class="sc-btn ghost" type="button" id="action-again">New transaction</button>
+            <button class="sc-btn" type="button" id="action-end">End session</button>
+          </div>
+        </div>
+
+        <!-- thanks / end -->
+        <div class="screen" id="scr-thanks">
+          <div class="sc-center">
+            <div class="entry-big">&#9786;</div>
+            <h2 class="sc-title" style="margin:0" id="t-label">Thank you</h2>
+            <p class="sc-sub" id="t-desc" style="margin:0">Come back any time.</p>
+            <p class="thanks-note" id="t-note">Please take your card</p>
+          </div>
+          <div class="sc-actions">
+            <button class="sc-btn" type="button" id="action-thanks">START</button>
+          </div>
+        </div>
+
+      </div>
+      <div class="scanlines"></div>
+    </div>
+
+    <!-- ================= CARD SLOT ================= -->
+    <div class="atm-card-slot">
+      <span class="led" id="card-led"></span>
+      <div class="slot-track"><div class="card-vis gone" id="card-vis"></div></div>
+      <span class="led" id="card-led2"></span>
+    </div>
+
+    <!-- ================= KEYPAD ================= -->
+    <div class="atm-keypad-wrap">
+      <div class="keypad">
+        <button class="key" type="button" id="key-1">1</button>
+        <button class="key" type="button" id="key-2">2</button>
+        <button class="key" type="button" id="key-3">3</button>
+        <button class="key" type="button" id="key-4">4</button>
+        <button class="key" type="button" id="key-5">5</button>
+        <button class="key" type="button" id="key-6">6</button>
+        <button class="key" type="button" id="key-7">7</button>
+        <button class="key" type="button" id="key-8">8</button>
+        <button class="key" type="button" id="key-9">9</button>
+        <button class="key fn" type="button" id="key-clear">CLEAR</button>
+        <button class="key" type="button" id="key-0">0</button>
+        <button class="key fn" type="button" id="key-cancel">BACK</button>
+      </div>
+      <div class="side-col">
+        <button class="key fn danger" type="button" id="key-cancel2">CANCEL</button>
+        <button class="key fn enter" type="button" id="key-enter">ENTER</button>
+      </div>
+    </div>
+
+    <!-- ================= CASH SLOT ================= -->
+    <div class="atm-cash-slot">
+      <span class="led2" id="cash-led"></span>
+      <div class="slot-track2"><div class="cash-vis none" id="cash-vis"><span class="n">EGP</span></div></div>
+      <span class="led2" id="cash-led2"></span>
+    </div>
+
+    <div class="atm-foot">
+      <span>E-Wallet ATM</span>
+      <span class="stamp">Demo Simulator</span>
+      <span>&#9679; ONLINE</span>
+    </div>
+
+    <div class="rules">
+      <div id="rules-a">This demo simulator only needs your phone number and the transaction code.</div>
+      <div id="rules-b" style="margin-top:4px"><b>Demo code:</b> 112233</div>
+    </div>
+  </div>
+
+  <script src="atm.js"></script>
+</body>
+</html>

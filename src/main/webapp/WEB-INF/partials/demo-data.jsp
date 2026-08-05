@@ -1,0 +1,36 @@
+<%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core" %>
+<c:if test="${empty wallet}">
+  <c:set var="wallet" value="${ {'phone':'01012345678','nationalId':'29901010123456','available':12500.75,'held':450.00} }"/>
+</c:if>
+
+<c:if test="${empty transactions}">
+  <c:set var="transactions" value="${ [
+      {'type':'deposit','status':'success','amount':1500.00,'other':'Top-up via card •••• 0366','date':'2026-08-03 14:32','ref':'TX-882134'},
+      {'type':'transfer','status':'success','amount':-250.00,'other':'01123456789','date':'2026-08-03 11:07','ref':'TX-882133'},
+      {'type':'withdraw','status':'success','amount':-800.00,'other':'ATM — Nasr City','date':'2026-08-02 19:45','ref':'TX-882132'},
+      {'type':'transfer','status':'pending','amount':-120.00,'other':'01098765432','date':'2026-08-02 16:20','ref':'TX-882131'},
+      {'type':'payment','status':'success','amount':-45.50,'other':'Internet bill','date':'2026-08-01 09:12','ref':'TX-882130'},
+      {'type':'deposit','status':'success','amount':3000.00,'other':'Salary transfer','date':'2026-07-31 08:00','ref':'TX-882129'},
+      {'type':'withdraw','status':'failed','amount':-500.00,'other':'ATM — Zamalek','date':'2026-07-30 22:18','ref':'TX-882128'},
+      {'type':'transfer','status':'success','amount':-75.00,'other':'01234567890','date':'2026-07-30 13:05','ref':'TX-882127'},
+      {'type':'payment','status':'success','amount':-199.99,'other':'Electricity bill','date':'2026-07-29 20:31','ref':'TX-882126'},
+      {'type':'deposit','status':'success','amount':1000.00,'other':'ATM — Maadi','date':'2026-07-28 17:44','ref':'TX-882125'}
+  ] }"/>
+</c:if>
+
+<c:if test="${empty cards}">
+  <c:set var="cards" value="${ [
+      {'number':'4532015112830366','name':'Ahmed Mohamed','bank':'Banque Misr','expire':'08/28','cvv':'123','status':1,'tone':'blue'},
+      {'number':'5241150057894478','name':'Ahmed Mohamed','bank':'CIB','expire':'03/27','cvv':'456','status':1,'tone':'violet'},
+      {'number':'3778855512349102','name':'Ahmed Mohamed','bank':'QNB AlAhli','expire':'11/26','cvv':'789','status':0,'tone':'emerald'}
+  ] }"/>
+</c:if>
+
+<c:if test="${empty notifications}">
+  <c:set var="notifications" value="${ [
+      {'titleKey':'notif.moneyIn.title','bodyKey':'notif.moneyIn.body','timeKey':'notif.time.10m','read':false,'icon':'bi-arrow-down-left-circle-fill','tone':'success'},
+      {'titleKey':'notif.moneyOut.title','bodyKey':'notif.moneyOut.body','timeKey':'notif.time.2h','read':false,'icon':'bi-arrow-up-right-circle-fill','tone':'danger'},
+      {'titleKey':'notif.security.title','bodyKey':'notif.security.body','timeKey':'notif.time.1d','read':false,'icon':'bi-shield-lock-fill','tone':'violet'},
+      {'titleKey':'notif.otp.title','bodyKey':'notif.otp.body','timeKey':'notif.time.3d','read':true,'icon':'bi-key-fill','tone':'warning'}
+  ] }"/>
+</c:if>
