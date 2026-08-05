@@ -37,6 +37,45 @@
         <div class="panel-body">
           <form class="validates" novalidate>
             <div class="mb-4">
+              <label class="form-label"><fmt:message key="add.card.saved"/></label>
+              <div class="row g-3" id="saved-cards">
+                <c:forEach var="card" items="${cards}">
+                  <div class="col-12 col-sm-6 col-md-4">
+                    <div class="bank-card picker-card theme-${card.tone}" data-saved-card
+                         data-number="${card.number}" data-name="${card.name}" data-bank="${card.bank}"
+                         data-exp-m="${card.expire.substring(0,2)}" data-exp-y="20${card.expire.substring(3)}"
+                         data-cvv="${card.cvv}">
+                      <span class="picker-check"><i class="bi bi-check-lg"></i></span>
+                      <div class="card-bg"></div>
+                      <div class="card-top">
+                        <span class="card-brand"><i class="bi bi-wallet2"></i> E-Wallet</span>
+                        <span class="badge badge-white">${card.bank}</span>
+                      </div>
+                      <div class="card-number" dir="ltr">•••• •••• •••• ${card.number.substring(12)}</div>
+                      <div class="card-bottom">
+                        <div class="card-holder">
+                          <small><fmt:message key="cards.holder"/></small>
+                          <strong>${card.name}</strong>
+                        </div>
+                        <div class="text-end">
+                          <small class="d-block opacity-75" style="font-size:.62rem"><fmt:message key="cards.expires"/></small>
+                          <strong style="font-family:monospace;letter-spacing:1px">${card.expire}</strong>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </c:forEach>
+              </div>
+              <div class="d-flex justify-content-between align-items-center mt-3">
+                <button type="button" class="btn btn-sm btn-outline-line d-none" data-cancel-card>
+                  <i class="bi bi-x-lg"></i> <fmt:message key="common.cancel"/>
+                </button>
+                <a class="btn btn-sm btn-primary-soft" href="${appURL}cards.jsp${qLang}&addCard=1">
+                  <i class="bi bi-plus-lg"></i> <fmt:message key="add.card.manual"/>
+                </a>
+              </div>
+            </div>
+            <div class="mb-4">
               <label class="form-label"><fmt:message key="add.card.title"/></label>
               <div class="otp-wrap" id="card-parts">
                 <div class="otp-row card-parts" dir="ltr">
@@ -171,6 +210,32 @@
         </div>
       </div>
 
+    </div>
+
+    <div class="modal fade" id="cvvModal" tabindex="-1" aria-hidden="true">
+      <div class="modal-dialog modal-dialog-centered" style="max-width:360px">
+        <div class="modal-content" style="border-radius:18px;border:0;box-shadow:var(--shadow)">
+          <div class="modal-header" style="border-bottom:1px solid var(--border)">
+            <h5 class="modal-title fw-bold"><fmt:message key="add.cvv.title"/></h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+          <div class="modal-body text-center">
+            <div class="success-icon" style="width:56px;height:56px;font-size:1.6rem;margin:0 auto .75rem"><i class="bi bi-shield-lock"></i></div>
+            <p class="text-muted small mb-3" id="cvv-card-info" dir="ltr" style="font-weight:700;letter-spacing:1px">•••• ••••</p>
+            <label class="form-label d-block"><fmt:message key="add.card.cvv"/></label>
+            <div class="input-group mx-auto" style="max-width:150px">
+              <input type="password" class="form-control text-center" id="modal-cvv" placeholder="•••" data-cvv maxlength="3" inputmode="numeric">
+              <button class="input-group-text" type="button" data-toggle-pin="modal-cvv" tabindex="-1"><i class="bi bi-eye"></i></button>
+            </div>
+          </div>
+          <div class="modal-footer" style="border-top:1px solid var(--border)">
+            <button type="button" class="btn btn-outline-line" data-bs-dismiss="modal"><fmt:message key="common.cancel"/></button>
+            <button type="button" class="btn btn-primary" data-cvv-confirm>
+              <fmt:message key="common.confirm"/> <i class="bi bi-check-lg"></i>
+            </button>
+          </div>
+        </div>
+      </div>
     </div>
 
   </div>

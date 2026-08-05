@@ -111,8 +111,8 @@
   }
 
   function initExpirySelects() {
-    APP.sel("[data-exp-m]").forEach(function (mSel) {
-      var ySel = mSel.closest(".d-flex").querySelector("[data-exp-y]");
+    APP.sel("select[data-exp-m]").forEach(function (mSel) {
+      var ySel = mSel.closest(".d-flex").querySelector("select[data-exp-y]");
       if (!ySel) return;
       var phM = mSel.firstElementChild;
       var phY = ySel.firstElementChild;
@@ -327,6 +327,99 @@
         btn.addEventListener("click", function () { show(current - 1); });
       });
       show(0);
+    });
+  }
+
+  function initSavedCards() {
+    var fields = ["#card-parts [data-card-part]", "#add-name", "#add-exp-m", "#add-exp-y", "#add-cvv"];
+    function setLocked(locked) {
+      fields.forEach(function (sel) {
+        document.querySelectorAll(sel).forEach(function (el) {
+          el.disabled = locked;
+          el.classList.toggle("card-fields-locked", locked);
+        });
+      });
+    }
+    function clearSelection() {
+      document.querySelectorAll("#saved-cards [data-saved-card]").forEach(function (c) {
+        c.classList.remove("selected");
+      });
+      document.querySelectorAll("#card-parts [data-card-part]").forEach(function (p) {
+        p.value = "";
+        p.classList.remove("has-value");
+      });
+      var name = document.getElementById("add-name");
+      if (name) name.value = "";
+      var em = document.getElementById("add-exp-m");
+      var ey = document.getElementById("add-exp-y");
+      if (em) em.value = "";
+      if (ey) ey.value = "";
+      var cvv = document.getElementById("add-cvv");
+      if (cvv) cvv.value = "";
+      setLocked(false);
+      var cancel = document.querySelector("[data-cancel-card]");
+      if (cancel) cancel.classList.add("d-none");
+    }
+    APP.sel("[data-saved-card]").forEach(function (card) {
+      card.addEventListener("click", function () {
+        if (card.classList.contains("selected")) {
+          clearSelection();
+          var first = document.querySelector("#card-parts [data-card-part]");
+          if (first) first.focus();
+          return;
+        }
+        clearSelection();
+        card.classList.add("selected");
+        var num = (card.getAttribute("data-number") || "").replace(/\s/g, "");
+        document.querySelectorAll("#card-parts [data-card-part]").forEach(function (p, i) {
+          var v = num.slice(i * 4, i * 4 + 4);
+          p.value = v;
+          p.classList.toggle("has-value", !!v);
+        });
+        var name = document.getElementById("add-name");
+        if (name) name.value = card.getAttribute("data-name") || "";
+        var em = document.getElementById("add-exp-m");
+        var ey = document.getElementById("add-exp-y");
+        if (em) em.value = card.getAttribute("data-exp-m") || "";
+        if (ey) ey.value = card.getAttribute("data-exp-y") || "";
+        setLocked(true);
+        var cancel = document.querySelector("[data-cancel-card]");
+        if (cancel) cancel.classList.remove("d-none");
+        var info = document.getElementById("cvv-card-info");
+        if (info) info.textContent = "•••• " + num.slice(-4);
+        var modalEl = document.getElementById("cvvModal");
+        if (modalEl) {
+          var mcvv = document.getElementById("modal-cvv");
+          if (mcvv) mcvv.value = "";
+          var modal = bootstrap.Modal.getInstance(modalEl) || new bootstrap.Modal(modalEl);
+          modal.show();
+          if (mcvv) mcvv.focus();
+        }
+      });
+    });
+    APP.sel("[data-cvv-confirm]").forEach(function (btn) {
+      btn.addEventListener("click", function () {
+        var mcvv = document.getElementById("modal-cvv");
+        var cvvVal = mcvv ? mcvv.value : "";
+        if (cvvVal.length < 3) {
+          APP.toast(APPMSG.invalid, "error");
+          if (mcvv) mcvv.focus();
+          return;
+        }
+        var cvv = document.getElementById("add-cvv");
+        if (cvv) cvv.value = cvvVal;
+        var modalEl = document.getElementById("cvvModal");
+        if (modalEl) {
+          var modal = bootstrap.Modal.getInstance(modalEl) || new bootstrap.Modal(modalEl);
+          modal.hide();
+        }
+        var panel = document.querySelector(".step-panel:not(.d-none)");
+        var nextBtn = panel && panel.querySelector("[data-next]");
+        if (nextBtn) nextBtn.click();
+      });
+    });
+    APP.sel("[data-cancel-card]").forEach(function (btn) {
+      btn.addEventListener("click", clearSelection);
     });
   }
 
@@ -570,6 +663,13 @@
   }
 
   function initCardModals() {
+    if (/[?&]addCard=1/.test(window.location.search)) {
+      var autoModal = document.getElementById("addCardModal");
+      if (autoModal) {
+        var autoM = bootstrap.Modal.getInstance(autoModal) || new bootstrap.Modal(autoModal);
+        autoM.show();
+      }
+    }
     APP.sel("[data-add-card]").forEach(function (btn) {
       btn.addEventListener("click", function () {
         var form = document.getElementById("card-add-form");
@@ -675,6 +775,7 @@
     initMasks();
     initCardParts();
     initExpirySelects();
+    initSavedCards();
     initOtps();
     initSteps();
     initQuickAmounts();
