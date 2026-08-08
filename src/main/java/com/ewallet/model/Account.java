@@ -5,7 +5,7 @@ import java.util.Objects;
 public class Account {
 
     private Long accountId;
-    private Long accountTypeId;
+    private int accountTypeId;
     private Long referenceId;
     private Integer status;
 
@@ -13,14 +13,13 @@ public class Account {
     }
 
     // Insert Constructor
-    public Account(Long accountTypeId, Long referenceId, Integer status) {
+    public Account(int accountTypeId, Long referenceId) {
         this.accountTypeId = accountTypeId;
         this.referenceId = referenceId;
-        this.status = status;
     }
 
     // Full Constructor
-    public Account(Long accountId, Long accountTypeId,
+    public Account(Long accountId, int accountTypeId,
                    Long referenceId, Integer status) {
         this.accountId = accountId;
         this.accountTypeId = accountTypeId;
@@ -36,11 +35,11 @@ public class Account {
         this.accountId = accountId;
     }
 
-    public Long getAccountTypeId() {
+    public int getAccountTypeId() {
         return accountTypeId;
     }
 
-    public void setAccountTypeId(Long accountTypeId) {
+    public void setAccountTypeId(int accountTypeId) {
         this.accountTypeId = accountTypeId;
     }
 

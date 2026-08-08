@@ -15,6 +15,10 @@ public class WalletBalance {
     }
 
     // Insert Constructor
+    public WalletBalance(Long walletId) {
+		this.walletId = walletId;
+	}
+    
     public WalletBalance(Long walletId, BigDecimal availableBalance, BigDecimal heldBalance) {
         this.walletId = walletId;
         this.availableBalance = availableBalance;

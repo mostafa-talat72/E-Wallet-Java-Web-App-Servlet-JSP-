@@ -69,10 +69,10 @@
     </a>
     <div class="dropdown">
       <button class="user-chip dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
-        <span class="user-avatar">AM</span>
+        <span class="user-avatar">${sessionScope.wallet.fullName.charAt(0)}</span>
         <span class="user-meta d-none d-md-block">
-          <strong><fmt:message key="demo.userName"/></strong>
-          <small>${wallet.phone}</small>
+          <strong>${sessionScope.wallet.fullName }</strong>
+          <small>${sessionScope.wallet.phoneNumber}</small>
         </span>
       </button>
       <ul class="dropdown-menu dropdown-menu-end">

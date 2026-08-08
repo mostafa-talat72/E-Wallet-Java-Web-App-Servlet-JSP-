@@ -741,31 +741,19 @@
     APP.sel("[data-card-widget]").forEach(bindCardWidget);
   }
 
-  function initSaveForms() {
-    APP.sel("[data-save-form]").forEach(function (btn) {
-      btn.addEventListener("click", function () {
-        var form = document.getElementById(btn.getAttribute("data-save-form"));
-        if (!form) return;
-        if (!form.checkValidity()) {
-          form.reportValidity();
-          APP.toast(APPMSG.invalid, "error");
-          return;
-        }
-        var pinForm = btn.closest("#pin-form");
-        if (pinForm) {
-          var np = pinForm.querySelector("[name=newPin]");
-          var np2 = pinForm.querySelector("[name=newPin2]");
-          if (np.value !== np2.value) {
-            APP.toast(APPMSG.invalid, "error");
-            return;
-          }
-          pinForm.reset();
-          APP.toast(APPMSG.pinChanged);
-          return;
-        }
-        form.reset();
-        APP.toast(APPMSG.saved);
-      });
+  function initProfileDelete() {
+    var form = document.getElementById("delete-form");
+    var pin = document.getElementById("delPin");
+    var phone = document.getElementById("delPhone");
+    if (!form || !pin) return;
+    form.addEventListener("submit", function (e) {
+      if (!phone || phone.value.length !== 11 || !pin.value || pin.value.length !== 6) {
+        e.preventDefault();
+        APP.toast(APPMSG.invalid, "error");
+        if (phone && phone.value.length !== 11) phone.focus();
+        else pin.focus();
+        return;
+      }
     });
   }
 
@@ -789,6 +777,6 @@
     initContactChips();
     initOtpVerify();
     initCardModals();
-    initSaveForms();
+    initProfileDelete();
   });
 })();

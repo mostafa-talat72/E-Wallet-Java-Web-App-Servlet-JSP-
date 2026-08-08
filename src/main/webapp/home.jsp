@@ -4,17 +4,19 @@
 <%@ include file="WEB-INF/partials/lang.jsp" %>
 <c:set var="pageTitle"><fmt:message key="nav.dashboard"/></c:set>
 <c:set var="activeMenu" value="home"/>
-<%@ include file="WEB-INF/partials/demo-data.jsp" %>
 <%@ include file="WEB-INF/partials/head.jsp" %>
 <%@ include file="WEB-INF/partials/navbar.jsp" %>
+<%
+	
 
+%>
 <main class="main-content">
   <div class="content-wrap">
 
     <div class="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-4">
       <div>
         <h1 class="page-title">
-          <fmt:message key="dash.greeting"/>, <span class="brand-text-gradient">Ahmed</span>
+          <fmt:message key="dash.greeting"/>, <span class="brand-text-gradient">${sessionScope.wallet.fullName }</span>
         </h1>
         <p class="page-subtitle"><fmt:message key="dash.subtitle"/></p>
       </div>
@@ -37,8 +39,8 @@
             </div>
             <div class="balance-amount">
               <span>
-                <span data-balance-value data-full="<fmt:formatNumber value='${wallet.available + wallet.held}' pattern='#,##0.00'/>">
-                  <fmt:formatNumber value="${wallet.available + wallet.held}" pattern="#,##0.00"/>
+                <span data-balance-value data-full="<fmt:formatNumber value='${sessionScope.walletBalance.availableBalance + sessionScope.walletBalance.heldBalance }' pattern='#,##0.00'/>">
+                  <fmt:formatNumber value="${sessionScope.walletBalance.availableBalance + sessionScope.walletBalance.heldBalance }" pattern="#,##0.00"/>
                 </span>
                 <small class="fs-6 fw-bold opacity-75"> <fmt:message key="common.currency"/></small>
               </span>
@@ -49,15 +51,15 @@
             <div class="hero-cols">
               <div class="hero-stat">
                 <small><fmt:message key="common.available"/></small>
-                <strong><fmt:formatNumber value="${wallet.available}" pattern="#,##0.00"/> <fmt:message key="common.currency"/></strong>
+                <strong><fmt:formatNumber value="${sessionScope.walletBalance.availableBalance }" pattern="#,##0.00"/> <fmt:message key="common.currency"/></strong>
               </div>
               <div class="hero-stat">
                 <small><fmt:message key="common.held"/></small>
-                <strong><fmt:formatNumber value="${wallet.held}" pattern="#,##0.00"/> <fmt:message key="common.currency"/></strong>
+                <strong><fmt:formatNumber value="${ sessionScope.walletBalance.heldBalance }" pattern="#,##0.00"/> <fmt:message key="common.currency"/></strong>
               </div>
               <div class="hero-stat">
                 <small><fmt:message key="common.phone"/></small>
-                <strong style="direction:ltr;font-family:monospace;letter-spacing:1px">${wallet.phone}</strong>
+                <strong style="direction:ltr;font-family:monospace;letter-spacing:1px">${sessionScope.wallet.phoneNumber} </strong>
               </div>
             </div>
             <div class="hero-actions">

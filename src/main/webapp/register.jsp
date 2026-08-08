@@ -1,6 +1,7 @@
 <%@ page contentType="text/html; charset=UTF-8" pageEncoding="UTF-8" %>
 <%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core" %>
 <%@ taglib prefix="fmt" uri="http://java.sun.com/jsp/jstl/fmt" %>
+<%@ taglib prefix="fn" uri="http://java.sun.com/jsp/jstl/functions" %>
 <%@ include file="WEB-INF/partials/lang.jsp" %>
 <c:set var="pageTitle"><fmt:message key="auth.registerTitle"/></c:set>
 <c:set var="bodyClass" value="auth-body"/>
@@ -55,27 +56,30 @@
       </div>
       <p class="auth-subtitle"><fmt:message key="auth.registerSubtitle"/></p>
 
-      <form action="login.jsp" method="get" novalidate>
+      <form action="/E-Wallet/walletController?action=signup" method="post" novalidate>
         <div class="mb-3">
           <label class="form-label" for="r-name"><fmt:message key="auth.fullName"/></label>
-          <input type="text" class="form-control form-control-lg" id="r-name" name="fullName"
-                 placeholder="Ahmed Mohamed" maxlength="100" required>
+          <input type="text" class="form-control form-control-lg${not empty err.fullName ? ' is-invalid' : ''}" id="r-name" name="fullName"
+                 value="${fn:escapeXml(param.fullName)}" placeholder="Ahmed Mohamed" maxlength="100" required>
+          <c:if test="${not empty err.fullName}"><div class="form-error show"><fmt:message key="${err.fullName}"/></div></c:if>
         </div>
         <div class="mb-3">
           <label class="form-label" for="r-phone"><fmt:message key="common.phone"/></label>
-          <input type="tel" class="form-control form-control-lg" id="r-phone" name="phone"
-                 placeholder="<fmt:message key="auth.phonePh"/>" data-phone required>
+          <input type="tel" class="form-control form-control-lg${not empty err.phone ? ' is-invalid' : ''}" id="r-phone" name="phone"
+                 value="${fn:escapeXml(param.phone)}" placeholder="<fmt:message key="auth.phonePh"/>" data-phone required>
+          <c:if test="${not empty err.phone}"><div class="form-error show"><fmt:message key="${err.phone}"/></div></c:if>
         </div>
         <div class="mb-3">
           <label class="form-label" for="national-id"><fmt:message key="auth.nationalId"/></label>
-          <input type="text" class="form-control form-control-lg" id="national-id" name="nationalId"
-                 placeholder="29901010123456" data-phone data-max="14" required>
+          <input type="text" class="form-control form-control-lg${not empty err.nationalId ? ' is-invalid' : ''}" id="national-id" name="nationalId"
+                 value="${fn:escapeXml(param.nationalId)}" placeholder="29901010123456" data-phone data-max="14" required>
+          <c:if test="${not empty err.nationalId}"><div class="form-error show"><fmt:message key="${err.nationalId}"/></div></c:if>
         </div>
         <div class="row g-3 mb-3">
           <div class="col-md-6">
             <label class="form-label" for="r-pin"><fmt:message key="common.pin"/></label>
             <div class="input-group">
-              <input type="password" class="form-control" id="r-pin" name="pin"
+              <input type="password" class="form-control${not empty err.pin ? ' is-invalid' : ''}" id="r-pin" name="pin"
                      placeholder="••••••" data-pin-input data-pin-meter inputmode="numeric" dir="ltr" required>
               <button class="input-group-text" type="button" data-toggle-pin="r-pin" tabindex="-1">
                 <i class="bi bi-eye"></i>
@@ -85,16 +89,18 @@
               <span></span><span></span><span></span>
             </div>
             <small class="strength-label" data-pin-meter-label></small>
+            <c:if test="${not empty err.pin}"><div class="form-error show"><fmt:message key="${err.pin}"/></div></c:if>
           </div>
           <div class="col-md-6">
             <label class="form-label" for="r-pin2"><fmt:message key="auth.confirmPin"/></label>
             <div class="input-group">
-              <input type="password" class="form-control" id="r-pin2" name="pinConfirm"
+              <input type="password" class="form-control${not empty err.pinConfirm ? ' is-invalid' : ''}" id="r-pin2" name="pinConfirm"
                      placeholder="••••••" data-pin-input inputmode="numeric" dir="ltr" required>
               <button class="input-group-text" type="button" data-toggle-pin="r-pin2" tabindex="-1">
                 <i class="bi bi-eye"></i>
               </button>
             </div>
+            <c:if test="${not empty err.pinConfirm}"><div class="form-error" style="display:block"><fmt:message key="${err.pinConfirm}"/></div></c:if>
           </div>
         </div>
         <div class="form-check mb-4">

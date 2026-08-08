@@ -1,6 +1,7 @@
 <%@ page contentType="text/html; charset=UTF-8" pageEncoding="UTF-8" %>
 <%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core" %>
 <%@ taglib prefix="fmt" uri="http://java.sun.com/jsp/jstl/fmt" %>
+<%@ taglib prefix="fn" uri="http://java.sun.com/jsp/jstl/functions" %>
 <%@ include file="WEB-INF/partials/lang.jsp" %>
 <c:set var="pageTitle"><fmt:message key="cards.title"/></c:set>
 <c:set var="pageSubtitle"><fmt:message key="cards.subtitle"/></c:set>
@@ -76,39 +77,44 @@
                 <label class="form-label"><fmt:message key="cards.cardId"/></label>
                 <div class="otp-wrap" id="m-card-parts">
                   <div class="otp-row card-parts" dir="ltr">
-                    <input type="text" class="otp-input card-part" data-card-part maxlength="4" inputmode="numeric" aria-label="card part 1" required>
+                    <input type="text" class="otp-input card-part${not empty err.cardNumber ? ' is-invalid' : ''}" data-card-part maxlength="4" inputmode="numeric" aria-label="card part 1" required>
                     <input type="text" class="otp-input card-part" data-card-part maxlength="4" inputmode="numeric" aria-label="card part 2" required>
                     <input type="text" class="otp-input card-part" data-card-part maxlength="4" inputmode="numeric" aria-label="card part 3" required>
                     <input type="text" class="otp-input card-part" data-card-part maxlength="4" inputmode="numeric" aria-label="card part 4" required>
                   </div>
                 </div>
+                <c:if test="${not empty err.cardNumber}"><div class="form-error show" style="margin-top:.5rem"><fmt:message key="${err.cardNumber}"/></div></c:if>
               </div>
               <div class="mb-3">
                 <label class="form-label"><fmt:message key="add.card.name"/></label>
-                <input type="text" class="form-control" id="m-name" name="name" placeholder="AHMED MOHAMED" required>
+                <input type="text" class="form-control${not empty err.name ? ' is-invalid' : ''}" id="m-name" name="name" value="${fn:escapeXml(param.name)}" placeholder="AHMED MOHAMED" required>
+                <c:if test="${not empty err.name}"><div class="form-error show"><fmt:message key="${err.name}"/></div></c:if>
               </div>
               <div class="mb-3">
                 <label class="form-label"><fmt:message key="cards.bankName"/></label>
-                <input type="text" class="form-control" id="m-bank" name="bank" placeholder="Banque Misr" required>
+                <input type="text" class="form-control${not empty err.bank ? ' is-invalid' : ''}" id="m-bank" name="bank" value="${fn:escapeXml(param.bank)}" placeholder="Banque Misr" required>
+                <c:if test="${not empty err.bank}"><div class="form-error show"><fmt:message key="${err.bank}"/></div></c:if>
               </div>
               <div class="row g-3 mb-3">
                 <div class="col-6">
                   <label class="form-label"><fmt:message key="add.card.exp"/></label>
                   <div class="d-flex gap-2">
-                    <select class="form-select" id="m-exp-m" name="expMonth" data-exp-m required>
+                    <select class="form-select${not empty err.expDate ? ' is-invalid' : ''}" id="m-exp-m" name="expMonth" data-exp-m required>
                       <option value="" selected disabled><fmt:message key="add.card.mm"/></option>
                     </select>
-                    <select class="form-select" id="m-exp-y" name="expYear" data-exp-y required>
+                    <select class="form-select${not empty err.expDate ? ' is-invalid' : ''}" id="m-exp-y" name="expYear" data-exp-y required>
                       <option value="" selected disabled><fmt:message key="add.card.yy"/></option>
                     </select>
                   </div>
+                  <c:if test="${not empty err.expDate}"><div class="form-error show"><fmt:message key="${err.expDate}"/></div></c:if>
                 </div>
                 <div class="col-6">
                   <label class="form-label" for="m-cvv"><fmt:message key="add.card.cvv"/></label>
                   <div class="input-group">
-                    <input type="password" class="form-control" id="m-cvv" name="cvv" placeholder="•••" data-cvv maxlength="3" inputmode="numeric" required>
+                    <input type="password" class="form-control${not empty err.cvv ? ' is-invalid' : ''}" id="m-cvv" name="cvv" placeholder="•••" data-cvv maxlength="3" inputmode="numeric" required>
                     <button class="input-group-text" type="button" data-toggle-pin="m-cvv" tabindex="-1"><i class="bi bi-eye"></i></button>
                   </div>
+                  <c:if test="${not empty err.cvv}"><div class="form-error show"><fmt:message key="${err.cvv}"/></div></c:if>
                 </div>
               </div>
             </form>

@@ -332,8 +332,19 @@ a{text-decoration:none}
 .form-check-input:checked{background-color:var(--primary);border-color:var(--primary)}
 .form-check-input:focus{box-shadow:0 0 0 4px rgba(37,99,235,.12)}
 .form-error{color:var(--danger);font-size:.75rem;font-weight:600;margin-top:.25rem;display:none}
+.form-error.show{display:block}
 .validates .form-control.is-invalid{border-color:var(--danger)}
+.validates .form-select.is-invalid{border-color:var(--danger)}
+.validates .otp-input.is-invalid{border-color:var(--danger)}
 .validates .form-control.is-invalid ~ .form-error{display:block}
+.validates .form-select.is-invalid ~ .form-error{display:block}
+.validates .otp-input.is-invalid ~ .form-error{display:block}
+.form-alert{
+  display:flex;align-items:flex-start;gap:.5rem;margin-bottom:1rem;
+  padding:.85rem 1rem;border-radius:11px;border:1.5px solid var(--danger);
+  background:var(--danger-bg);color:var(--danger);font-size:.8rem;font-weight:600;
+}
+.form-alert i{margin-top:.15rem}
 .pin-strong{display:flex;gap:5px;margin-top:.5rem}
 .pin-strong span{height:5px;flex:1;border-radius:3px;background:var(--border);transition:background .2s}
 .pin-strong span.on-weak{background:var(--danger)}

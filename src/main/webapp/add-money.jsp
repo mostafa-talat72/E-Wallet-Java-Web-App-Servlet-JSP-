@@ -1,6 +1,7 @@
 <%@ page contentType="text/html; charset=UTF-8" pageEncoding="UTF-8" %>
 <%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core" %>
 <%@ taglib prefix="fmt" uri="http://java.sun.com/jsp/jstl/fmt" %>
+<%@ taglib prefix="fn" uri="http://java.sun.com/jsp/jstl/functions" %>
 <%@ include file="WEB-INF/partials/lang.jsp" %>
 <c:set var="pageTitle"><fmt:message key="add.title"/></c:set>
 <c:set var="pageSubtitle"><fmt:message key="add.subtitle"/></c:set>
@@ -79,36 +80,41 @@
               <label class="form-label"><fmt:message key="add.card.title"/></label>
               <div class="otp-wrap" id="card-parts">
                 <div class="otp-row card-parts" dir="ltr">
-                  <input type="text" class="otp-input card-part" data-card-part maxlength="4" inputmode="numeric" aria-label="card part 1" required>
+                  <input type="text" class="otp-input card-part${not empty err.cardNumber ? ' is-invalid' : ''}" data-card-part maxlength="4" inputmode="numeric" aria-label="card part 1" required>
                   <input type="text" class="otp-input card-part" data-card-part maxlength="4" inputmode="numeric" aria-label="card part 2" required>
                   <input type="text" class="otp-input card-part" data-card-part maxlength="4" inputmode="numeric" aria-label="card part 3" required>
                   <input type="text" class="otp-input card-part" data-card-part maxlength="4" inputmode="numeric" aria-label="card part 4" required>
                 </div>
               </div>
+              <c:if test="${not empty err.cardNumber}"><div class="form-error show" style="margin-top:.5rem"><fmt:message key="${err.cardNumber}"/></div></c:if>
             </div>
             <div class="row g-4 mb-4">
               <div class="col-12 col-md-6">
                 <label class="form-label" for="add-name"><fmt:message key="add.card.name"/></label>
-                <input type="text" class="form-control" id="add-name" name="cardName"
+                <input type="text" class="form-control${not empty err.cardName ? ' is-invalid' : ''}" id="add-name" name="cardName"
+                       value="${fn:escapeXml(param.cardName)}"
                        placeholder="AHMED MOHAMED" required>
+                <c:if test="${not empty err.cardName}"><div class="form-error show"><fmt:message key="${err.cardName}"/></div></c:if>
               </div>
               <div class="col-6 col-md-3">
                 <label class="form-label"><fmt:message key="add.card.exp"/></label>
                 <div class="d-flex gap-2">
-                  <select class="form-select" id="add-exp-m" name="expMonth" data-exp-m required>
+                  <select class="form-select${not empty err.expDate ? ' is-invalid' : ''}" id="add-exp-m" name="expMonth" data-exp-m required>
                     <option value="" selected disabled><fmt:message key="add.card.mm"/></option>
                   </select>
-                  <select class="form-select" id="add-exp-y" name="expYear" data-exp-y required>
+                  <select class="form-select${not empty err.expDate ? ' is-invalid' : ''}" id="add-exp-y" name="expYear" data-exp-y required>
                     <option value="" selected disabled><fmt:message key="add.card.yy"/></option>
                   </select>
                 </div>
+                <c:if test="${not empty err.expDate}"><div class="form-error show"><fmt:message key="${err.expDate}"/></div></c:if>
               </div>
               <div class="col-6 col-md-3">
                 <label class="form-label" for="add-cvv"><fmt:message key="add.card.cvv"/></label>
                 <div class="input-group">
-                  <input type="password" class="form-control" id="add-cvv" name="cvv" placeholder="•••" data-cvv maxlength="3" inputmode="numeric" required>
+                  <input type="password" class="form-control${not empty err.cvv ? ' is-invalid' : ''}" id="add-cvv" name="cvv" placeholder="•••" data-cvv maxlength="3" inputmode="numeric" required>
                   <button class="input-group-text" type="button" data-toggle-pin="add-cvv" tabindex="-1"><i class="bi bi-eye"></i></button>
                 </div>
+                <c:if test="${not empty err.cvv}"><div class="form-error show"><fmt:message key="${err.cvv}"/></div></c:if>
               </div>
             </div>
             <div class="form-check mb-4">
@@ -131,8 +137,10 @@
           <form class="validates" novalidate>
             <div class="mb-4">
               <label class="form-label" for="amount"><fmt:message key="add.amount.title"/> (<fmt:message key="common.currency"/>)</label>
-              <input type="number" class="form-control form-control-lg" id="amount" name="amount"
+              <input type="number" class="form-control form-control-lg${not empty err.amount ? ' is-invalid' : ''}" id="amount" name="amount"
+                     value="${fn:escapeXml(param.amount)}"
                      min="1" step="0.01" placeholder="0.00" required>
+              <c:if test="${not empty err.amount}"><div class="form-error show"><fmt:message key="${err.amount}"/></div></c:if>
               <div class="mt-2 d-flex gap-2 flex-wrap" data-amount-chips="amount">
                 <button type="button" class="btn btn-outline-line btn-sm chip" data-value="50">50</button>
                 <button type="button" class="btn btn-outline-line btn-sm chip" data-value="100">100</button>
@@ -170,13 +178,14 @@
             </div>
             <div class="otp-wrap">
               <div class="otp-row" dir="ltr">
-                <input type="password" class="otp-input" data-otp maxlength="1" inputmode="numeric" dir="ltr">
+                <input type="password" class="otp-input${not empty err.pin ? ' is-invalid' : ''}" data-otp maxlength="1" inputmode="numeric" dir="ltr">
                 <input type="password" class="otp-input" data-otp maxlength="1" inputmode="numeric" dir="ltr">
                 <input type="password" class="otp-input" data-otp maxlength="1" inputmode="numeric" dir="ltr">
                 <input type="password" class="otp-input" data-otp maxlength="1" inputmode="numeric" dir="ltr">
                 <input type="password" class="otp-input" data-otp maxlength="1" inputmode="numeric" dir="ltr">
                 <input type="password" class="otp-input" data-otp maxlength="1" inputmode="numeric" dir="ltr">
               </div>
+              <c:if test="${not empty err.pin}"><div class="form-error show" style="margin-top:.5rem"><fmt:message key="${err.pin}"/></div></c:if>
             </div>
             <div class="d-flex justify-content-center gap-3 mb-4">
               <button type="button" class="btn btn-outline-line btn-lg" data-prev>

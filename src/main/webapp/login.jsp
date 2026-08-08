@@ -1,6 +1,7 @@
 <%@ page contentType="text/html; charset=UTF-8" pageEncoding="UTF-8" %>
 <%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core" %>
 <%@ taglib prefix="fmt" uri="http://java.sun.com/jsp/jstl/fmt" %>
+<%@ taglib prefix="fn" uri="http://java.sun.com/jsp/jstl/functions" %>
 <%@ include file="WEB-INF/partials/lang.jsp" %>
 <c:set var="pageTitle"><fmt:message key="auth.loginTitle"/></c:set>
 <c:set var="bodyClass" value="auth-body"/>
@@ -55,17 +56,32 @@
       </div>
       <p class="auth-subtitle"><fmt:message key="auth.loginSubtitle"/></p>
 
-      <form action="home.jsp" method="get" novalidate>
+      <form action="/E-Wallet/walletController?action=login" method="post" novalidate>
+        <% 
+	        String loginError = (String) request.getAttribute("loginError");
+	        String phoneNumberErr = "", pinErr = "";
+	        if(loginError != null && !loginError.isEmpty()) {	
+        %>
+          <div class="form-alert" role="alert">
+	          <i class="bi bi-exclamation-circle-fill"></i>
+	          <span><fmt:message key="<%= loginError %>"/></span>
+          </div>
+		<%
+        	phoneNumberErr = (String) request.getAttribute("phoneNumberErr");
+			pinErr = (String) request.getAttribute("pinErr");
+	     }
+		%>
         <div class="mb-3">
           <label class="form-label" for="phone"><fmt:message key="common.phone"/></label>
           <input type="tel" class="form-control form-control-lg" id="phone" name="phone"
+                 value="<%= phoneNumberErr %>"
                  placeholder="<fmt:message key="auth.phonePh"/>" data-phone required>
         </div>
         <div class="mb-3">
           <label class="form-label" for="pin"><fmt:message key="common.pin"/></label>
           <div class="input-group input-group-lg">
             <input type="password" class="form-control" id="pin" name="pin"
-                   placeholder="••••••" data-pin-input inputmode="numeric" dir="ltr" required>
+                   placeholder="••••••" value="<%= pinErr %>" data-pin-input inputmode="numeric" dir="ltr" required>
             <button class="input-group-text" type="button" data-toggle-pin="pin" tabindex="-1">
               <i class="bi bi-eye"></i>
             </button>

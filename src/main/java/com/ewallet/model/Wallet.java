@@ -8,6 +8,7 @@ public class Wallet {
     private Long walletId;
     private String phoneNumber;
     private String nationalId;
+    private String fullName;
     private String pinHash;
     private String salt;
     private Integer status;
@@ -16,28 +17,44 @@ public class Wallet {
 
     public Wallet() {
     }
-
-    // Insert Constructor
-    public Wallet(String phoneNumber, String nationalId,
-                  String pinHash, String salt, Integer status) {
-        this.phoneNumber = phoneNumber;
-        this.nationalId = nationalId;
-        this.pinHash = pinHash;
-        this.salt = salt;
-        this.status = status;
+    
+    // login Constructor
+    public Wallet(String phoneNumber, String pinHash) {
+    		this.phoneNumber = phoneNumber;
+    		this.pinHash = pinHash;
     }
 
+    // Insert Constructor
+    public Wallet(String phoneNumber, String nationalId,String fullName,
+				  String pinHash, String salt) {
+		this.phoneNumber = phoneNumber;
+		this.nationalId = nationalId;
+        this.fullName = fullName;
+		this.pinHash = pinHash;
+		this.salt = salt;
+	}
+    
+    // Update pinHash Constructor
+    public Wallet(Long walletId, String fullName,  String pinHash, String salt) {
+		this.walletId = walletId;
+		this.fullName = fullName;
+		this.pinHash = pinHash;
+		this.salt = salt;
+	}
+    
+    
+    
     // Full Constructor
-    public Wallet(Long walletId, String phoneNumber, String nationalId,
-                  String pinHash, String salt, Integer status,
-                  Timestamp createdAt, Timestamp updatedAt) {
+    public Wallet(Long walletId, String phoneNumber, String nationalId,String fullName,
+                  String pinHash, String salt, Integer status, Timestamp created_at, Timestamp updatedAt) {
         this.walletId = walletId;
         this.phoneNumber = phoneNumber;
         this.nationalId = nationalId;
+        this.fullName = fullName;
         this.pinHash = pinHash;
         this.salt = salt;
         this.status = status;
-        this.createdAt = createdAt;
+        this.createdAt = created_at;
         this.updatedAt = updatedAt;
     }
 
@@ -45,40 +62,32 @@ public class Wallet {
         return walletId;
     }
 
-    public void setWalletId(Long walletId) {
-        this.walletId = walletId;
-    }
 
     public String getPhoneNumber() {
         return phoneNumber;
     }
 
-    public void setPhoneNumber(String phoneNumber) {
-        this.phoneNumber = phoneNumber;
-    }
+ 
 
     public String getNationalId() {
         return nationalId;
     }
 
-    public void setNationalId(String nationalId) {
-        this.nationalId = nationalId;
-    }
 
+    public String getFullName() {
+		return fullName;
+	}
+
+	public void setFullName(String fullName) {
+		this.fullName = fullName;
+	}
+	
     public String getPinHash() {
         return pinHash;
     }
 
-    public void setPinHash(String pinHash) {
-        this.pinHash = pinHash;
-    }
-
     public String getSalt() {
         return salt;
-    }
-
-    public void setSalt(String salt) {
-        this.salt = salt;
     }
 
     public Integer getStatus() {
@@ -93,16 +102,8 @@ public class Wallet {
         return createdAt;
     }
 
-    public void setCreatedAt(Timestamp createdAt) {
-        this.createdAt = createdAt;
-    }
-
     public Timestamp getUpdatedAt() {
         return updatedAt;
-    }
-
-    public void setUpdatedAt(Timestamp updatedAt) {
-        this.updatedAt = updatedAt;
     }
 
     @Override
@@ -110,6 +111,7 @@ public class Wallet {
         return "Wallet{" +
                 "walletId=" + walletId +
                 ", phoneNumber='" + phoneNumber + '\'' +
+                ", fullName='" + fullName + '\'' +                
                 ", nationalId='" + nationalId + '\'' +
                 ", status=" + status +
                 ", createdAt=" + createdAt +
@@ -129,4 +131,6 @@ public class Wallet {
     public int hashCode() {
         return Objects.hash(walletId);
     }
+
+	
 }

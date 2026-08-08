@@ -1,0 +1,16 @@
+<!--
+  CONTEXT.XML — Tomcat server-level configuration for JNDI resources.
+  ⚠ This file is in .gitignore — do NOT commit real credentials.
+  Copy this template and fill in your own values locally.
+-->
+<Context>
+
+  <Resource name="jdbc/ewallet/dBconnection"
+            type="javax.sql.DataSource"
+            username="EWALLET"
+            password="123456"
+            driverClassName="oracle.jdbc.OracleDriver"
+            url="jdbc:oracle:thin:@//localhost:1521/orclpdb"
+            />
+
+</Context>

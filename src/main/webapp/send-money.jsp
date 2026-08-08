@@ -1,6 +1,7 @@
 <%@ page contentType="text/html; charset=UTF-8" pageEncoding="UTF-8" %>
 <%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core" %>
 <%@ taglib prefix="fmt" uri="http://java.sun.com/jsp/jstl/fmt" %>
+<%@ taglib prefix="fn" uri="http://java.sun.com/jsp/jstl/functions" %>
 <%@ include file="WEB-INF/partials/lang.jsp" %>
 <c:set var="pageTitle"><fmt:message key="send.title"/></c:set>
 <c:set var="pageSubtitle"><fmt:message key="send.subtitle"/></c:set>
@@ -38,8 +39,10 @@
           <form class="validates" novalidate>
             <div class="mb-4">
               <label class="form-label" for="recipient"><fmt:message key="send.recipient"/></label>
-              <input type="tel" class="form-control form-control-lg" id="recipient" name="recipient"
+              <input type="tel" class="form-control form-control-lg${not empty err.recipient ? ' is-invalid' : ''}" id="recipient" name="recipient"
+                     value="${fn:escapeXml(param.recipient)}"
                      placeholder="<fmt:message key="send.recipientPh"/>" data-phone required>
+              <c:if test="${not empty err.recipient}"><div class="form-error show"><fmt:message key="${err.recipient}"/></div></c:if>
               <div class="mt-2 d-flex gap-2 flex-wrap">
                 <button type="button" class="btn btn-outline-line btn-sm" data-contact="recipient" data-number="01123456789">01123456789</button>
                 <button type="button" class="btn btn-outline-line btn-sm" data-contact="recipient" data-number="01098765432">01098765432</button>
@@ -47,8 +50,10 @@
             </div>
             <div class="mb-4">
               <label class="form-label" for="amount"><fmt:message key="common.amount"/> (<fmt:message key="common.currency"/>)</label>
-              <input type="number" class="form-control form-control-lg" id="amount" name="amount"
+              <input type="number" class="form-control form-control-lg${not empty err.amount ? ' is-invalid' : ''}" id="amount" name="amount"
+                     value="${fn:escapeXml(param.amount)}"
                      min="1" step="0.01" placeholder="0.00" required>
+              <c:if test="${not empty err.amount}"><div class="form-error show"><fmt:message key="${err.amount}"/></div></c:if>
               <div class="mt-2 d-flex gap-2 flex-wrap" data-amount-chips="amount">
                 <button type="button" class="btn btn-outline-line btn-sm chip" data-value="50">50</button>
                 <button type="button" class="btn btn-outline-line btn-sm chip" data-value="100">100</button>
@@ -58,13 +63,15 @@
             </div>
             <div class="mb-4">
               <label class="form-label" for="note"><fmt:message key="send.note"/></label>
-              <input type="text" class="form-control" id="note" name="note"
+              <input type="text" class="form-control${not empty err.note ? ' is-invalid' : ''}" id="note" name="note"
+                     value="${fn:escapeXml(param.note)}"
                      placeholder="<fmt:message key="send.notePh"/>" maxlength="200">
+              <c:if test="${not empty err.note}"><div class="form-error show"><fmt:message key="${err.note}"/></div></c:if>
             </div>
             <div class="d-flex justify-content-between align-items-center">
               <span class="small text-muted fw-semibold">
                 <fmt:message key="common.available"/>:
-                <strong class="text-success"><fmt:formatNumber value="${wallet.available}" pattern="#,##0.00"/> <fmt:message key="common.currency"/></strong>
+                <strong class="text-success"><fmt:formatNumber value="${sessionScope.wallet.status}" pattern="#,##0.00"/> <fmt:message key="common.currency"/></strong>
               </span>
               <button type="button" class="btn btn-primary btn-lg" data-next>
                 <fmt:message key="common.continue"/> <i class="bi bi-arrow-left"></i>
@@ -121,15 +128,16 @@
               <fmt:message key="send.otp.desc"/>
             </p>
             <p class="text-muted small mb-3"><fmt:message key="send.preview.to"/> <strong style="direction:ltr" id="otp-phone" data-fill="#recipient">—</strong></p>
-            <div class="otp-wrap">
+              <div class="otp-wrap">
               <div class="otp-row" dir="ltr">
-                <input type="password" class="otp-input" data-otp maxlength="1" inputmode="numeric" dir="ltr">
+                <input type="password" class="otp-input${not empty err.otp ? ' is-invalid' : ''}" data-otp maxlength="1" inputmode="numeric" dir="ltr">
                 <input type="password" class="otp-input" data-otp maxlength="1" inputmode="numeric" dir="ltr">
                 <input type="password" class="otp-input" data-otp maxlength="1" inputmode="numeric" dir="ltr">
                 <input type="password" class="otp-input" data-otp maxlength="1" inputmode="numeric" dir="ltr">
                 <input type="password" class="otp-input" data-otp maxlength="1" inputmode="numeric" dir="ltr">
                 <input type="password" class="otp-input" data-otp maxlength="1" inputmode="numeric" dir="ltr">
               </div>
+              <c:if test="${not empty err.otp}"><div class="form-error show" style="margin-top:.5rem"><fmt:message key="${err.otp}"/></div></c:if>
               <button type="button" class="btn btn-sm btn-outline-line mt-2" data-toggle-otp aria-label="Show PIN">
                 <i class="bi bi-eye"></i>
               </button>
