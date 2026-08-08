@@ -1,4 +1,5 @@
 <%@ page contentType="text/html; charset=UTF-8" pageEncoding="UTF-8" %>
+<%@ page import="java.util.Map" %>
 <%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core" %>
 <%@ taglib prefix="fmt" uri="http://java.sun.com/jsp/jstl/fmt" %>
 <%@ taglib prefix="fn" uri="http://java.sun.com/jsp/jstl/functions" %>
@@ -55,32 +56,101 @@
         </div>
       </div>
       <p class="auth-subtitle"><fmt:message key="auth.registerSubtitle"/></p>
-
+	<%
+		Map<String, String> err = (Map<String, String>) request.getAttribute("errors");
+		String fullNameErr = "";
+		String phoneNumberErr = "";
+		String nationalIdErr = "";
+		String pinErr = "";
+		String pinConfirmErr = "";
+		String siginUpErr = "";
+		
+		String fullNameErrVal = request.getAttribute("fullNameErrVal") == null? "" : (String) request.getAttribute("fullNameErrVal");
+		String phoneNumberErrVal = request.getAttribute("phoneNumberErrVal") == null? "" :(String) request.getAttribute("phoneNumberErrVal");
+		String nationalIdErrVal = request.getAttribute("nationalIdErrVal") == null? "" :(String) request.getAttribute("nationalIdErrVal");
+		String pinErrVal = request.getAttribute("pinErrVal") == null? "" :(String) request.getAttribute("pinErrVal");
+		String pinConfirmErrVal = request.getAttribute("pinConfirmErrVal") == null? "" :(String) request.getAttribute("pinConfirmErrVal");
+		
+	
+		
+		if(err != null) {
+		    for(Map.Entry<String, String> entry : err.entrySet()) {
+		        String key = entry.getKey();
+		        String value = entry.getValue();
+		        
+		        if("fullName".equals(key)) {
+		            fullNameErr = value;
+		        } else if("phoneNumber".equals(key)) {
+		        	phoneNumberErr = value;
+		        } else if("nationalId".equals(key)) {
+		            nationalIdErr = value;
+		        } else if("pin".equals(key)) {
+		            pinErr = value;
+		        }else if("pinConfirm".equals(key)) {
+		            pinConfirmErr = value;
+		        }else if("siginUpErr".equals(key)){
+		        	siginUpErr = value;
+		        }
+		    }
+		}
+	%>
       <form action="/E-Wallet/walletController?action=signup" method="post" novalidate>
+        <% 
+          	if(!siginUpErr.isEmpty()){
+         %>
+	       <div class="form-alert" style="text-align:start" role="alert">
+	       <i class="bi bi-exclamation-circle-fill"></i>
+	       <span><fmt:message key="<%= siginUpErr %>"/></span>
+	       </div>
+        <% 
+          	}
+         %>
         <div class="mb-3">
           <label class="form-label" for="r-name"><fmt:message key="auth.fullName"/></label>
-          <input type="text" class="form-control form-control-lg${not empty err.fullName ? ' is-invalid' : ''}" id="r-name" name="fullName"
-                 value="${fn:escapeXml(param.fullName)}" placeholder="Ahmed Mohamed" maxlength="100" required>
-          <c:if test="${not empty err.fullName}"><div class="form-error show"><fmt:message key="${err.fullName}"/></div></c:if>
+          <input type="text" class="form-control form-control-lg<%= !fullNameErr.isEmpty()? " is-invalid":"" %>" id="r-name" name="fullName"
+                 value="<%= fullNameErrVal %>" placeholder="Ahmed Mohamed" maxlength="100" required>
+          <% 
+          	if(!fullNameErr.isEmpty()){
+          %>
+          	
+          		<div class="form-error show"><fmt:message key="<%= fullNameErr %>"/></div>
+           <% 
+          	}
+          %>
         </div>
         <div class="mb-3">
           <label class="form-label" for="r-phone"><fmt:message key="common.phone"/></label>
-          <input type="tel" class="form-control form-control-lg${not empty err.phone ? ' is-invalid' : ''}" id="r-phone" name="phone"
-                 value="${fn:escapeXml(param.phone)}" placeholder="<fmt:message key="auth.phonePh"/>" data-phone required>
-          <c:if test="${not empty err.phone}"><div class="form-error show"><fmt:message key="${err.phone}"/></div></c:if>
+          <input type="tel" class="form-control form-control-lg<%= !phoneNumberErr.isEmpty()? " is-invalid":"" %>" id="r-phone" name="phone"
+                 value="<%= phoneNumberErrVal %>" placeholder="<fmt:message key="auth.phonePh"/>" data-phone required>
+          <% 
+          	if(!phoneNumberErr.isEmpty()){
+          %>
+          	
+          		<div class="form-error show"><fmt:message key="<%= phoneNumberErr %>"/></div>
+           <% 
+          	}
+          %>
+       
         </div>
         <div class="mb-3">
           <label class="form-label" for="national-id"><fmt:message key="auth.nationalId"/></label>
-          <input type="text" class="form-control form-control-lg${not empty err.nationalId ? ' is-invalid' : ''}" id="national-id" name="nationalId"
-                 value="${fn:escapeXml(param.nationalId)}" placeholder="29901010123456" data-phone data-max="14" required>
-          <c:if test="${not empty err.nationalId}"><div class="form-error show"><fmt:message key="${err.nationalId}"/></div></c:if>
+          <input type="text" class="form-control form-control-lg<%= !nationalIdErr.isEmpty()? " is-invalid":"" %>" id="national-id" name="nationalId"
+                 value="<%= nationalIdErrVal %>" placeholder="29901010123456" data-phone data-max="14" required>
+		  <% 
+          	if(!nationalIdErr.isEmpty()){
+          %>
+          	
+          		<div class="form-error show"><fmt:message key="<%= nationalIdErr %>"/></div>
+           <% 
+          	}
+          %>       
         </div>
         <div class="row g-3 mb-3">
           <div class="col-md-6">
             <label class="form-label" for="r-pin"><fmt:message key="common.pin"/></label>
             <div class="input-group">
-              <input type="password" class="form-control${not empty err.pin ? ' is-invalid' : ''}" id="r-pin" name="pin"
-                     placeholder="••••••" data-pin-input data-pin-meter inputmode="numeric" dir="ltr" required>
+              <input type="password" class="form-control<%= !pinErr.isEmpty()? " is-invalid":"" %>" id="r-pin" name="pin"
+                   value="<%= pinErrVal %>"  placeholder="••••••" data-pin-input data-pin-meter inputmode="numeric" dir="ltr" required>
               <button class="input-group-text" type="button" data-toggle-pin="r-pin" tabindex="-1">
                 <i class="bi bi-eye"></i>
               </button>
@@ -89,18 +159,30 @@
               <span></span><span></span><span></span>
             </div>
             <small class="strength-label" data-pin-meter-label></small>
-            <c:if test="${not empty err.pin}"><div class="form-error show"><fmt:message key="${err.pin}"/></div></c:if>
+           <% 
+          	if(!pinErr.isEmpty()){
+          %>
+          <div class="form-error" style="display:block"><fmt:message key="<%= pinErr %>"/></div>
+           <% 
+          	}
+          %>  
           </div>
           <div class="col-md-6">
             <label class="form-label" for="r-pin2"><fmt:message key="auth.confirmPin"/></label>
             <div class="input-group">
-              <input type="password" class="form-control${not empty err.pinConfirm ? ' is-invalid' : ''}" id="r-pin2" name="pinConfirm"
-                     placeholder="••••••" data-pin-input inputmode="numeric" dir="ltr" required>
+              <input type="password" class="form-control<%= !pinConfirmErr.isEmpty()? " is-invalid":"" %>" id="r-pin2" name="pinConfirm"
+                      value="<%= pinConfirmErrVal %>" placeholder="••••••" data-pin-input inputmode="numeric" dir="ltr" required>
               <button class="input-group-text" type="button" data-toggle-pin="r-pin2" tabindex="-1">
                 <i class="bi bi-eye"></i>
               </button>
             </div>
-            <c:if test="${not empty err.pinConfirm}"><div class="form-error" style="display:block"><fmt:message key="${err.pinConfirm}"/></div></c:if>
+            <% 
+          	if(!pinConfirmErr.isEmpty()){
+          %>
+          <div class="form-error" style="display:block"><fmt:message key="<%= pinConfirmErr %>"/></div>
+           <% 
+          	}
+          %>
           </div>
         </div>
         <div class="form-check mb-4">

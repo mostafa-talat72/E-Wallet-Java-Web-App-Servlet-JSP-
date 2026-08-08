@@ -23,7 +23,7 @@ public class UserWalletValidator {
 		return errors;
 	}
 	
-	public static Map<String, String> validateForUpdateInfo(String fullName, String password, String confirmPassword) {
+	public static Map<String, String> validateForUpdateInfo(String fullName) {
 		Map<String, String> errors = new HashMap<>();
 		checkFullName(fullName, errors);
 		return errors;
@@ -59,11 +59,11 @@ public class UserWalletValidator {
 		if ("23000".equals(sqlState)) { // Integrity constraint violation
 			String message = e.getMessage();
 			if (message.contains("UQ_PHONE")) {
-				errors.put("phoneNumber", "Phone number already exists.");
+				errors.put("phoneNumber", "err.phone.exists");
 			} else if (message.contains("CHECK_PHONE_NUMBER_LENGTH")) {
-				errors.put("phoneNumber", "Phone number must be exactly 11 digits.");
+				errors.put("phoneNumber", "err.phone.length");
 			} else if (message.contains("CHECK_NATIONAL_ID_LENGTH")) {
-				errors.put("nationalId", "National ID must be exactly 14 digits.");
+				errors.put("nationalId", "err.nationalId.invalid");
 			}
 		}
 		return errors;		
@@ -71,64 +71,65 @@ public class UserWalletValidator {
 
 	private static void checkFullName(String fullName, Map<String, String> errors) {
 		if(fullName == null || fullName.trim().isEmpty()) {
-			errors.put("fullName", "Full name is required.");
+			errors.put("fullName", "err.fullName.required");
 			return;
 		} 
 		String trimmedFullName = fullName.trim();
 		if(trimmedFullName.length() < 3 || trimmedFullName.length() > 50) {
-			errors.put("fullName", "Full name must be between 3 and 50 characters.");
+			errors.put("fullName", "err.fullName.length");
 		}
 	}
 
 	private static void checkPhoneNumber(String phoneNumber, Map<String, String> errors) {
 		if(phoneNumber == null || phoneNumber.trim().isEmpty()) {
-			errors.put("phoneNumber", "Phone number is required.");
+			errors.put("phoneNumber", "err.phone.required");
 			return;
 		} 
 		String trimmedPhoneNumber = phoneNumber.trim();
 		if(!trimmedPhoneNumber.matches("\\d{11}")) {
-			errors.put("phoneNumber", "Phone number must be exactly 11 digits.");
+			errors.put("phoneNumber", "err.phone.length");
+			return;
 		}		
 		
 		if(!trimmedPhoneNumber.startsWith("01")) {
-			errors.put("phoneNumber", "Phone number must start with '01'.");
+			errors.put("phoneNumber", "err.phone.start");
 		}
 	}
 	
 	private static void checkNationalId(String nationalId, Map<String, String> errors) {
 		if(nationalId == null || nationalId.trim().isEmpty()) {
-			errors.put("nationalId", "National ID is required.");
+			errors.put("nationalId", "err.nationalId.required");
 			return;
 		} 
 		String trimmedNationalId = nationalId.trim();
 		if(!trimmedNationalId.matches("\\d{14}")) {
-			errors.put("nationalId", "National ID must be exactly 14 digits.");
+			errors.put("nationalId", "err.nationalId.invalid");
 		}
 	}
 
 	private static void checkPassword(String password, Map<String, String> errors) {
 		if(password == null || password.trim().isEmpty()) {
-			errors.put("password", "Password is required.");
+			errors.put("pin", "err.pin.required");
 			return;
 		} 
 		String trimmedPassword = password.trim();
 		if(trimmedPassword.length() != 6) {
-			errors.put("password", "Password must be exactly 6 characters.");
+			errors.put("pin", "err.pin.length");
+			return;
 		}		
-		
 		if(!trimmedPassword.matches("\\d{6}")) {
-			errors.put("password", "Password must contain only digits.");
+			errors.put("pin", "err.pin.digits");
 		}
 	}
 
 	private static void checkConfirmPassword(String password, String confirmPassword, Map<String, String> errors) {
 		if(confirmPassword == null || confirmPassword.trim().isEmpty()) {
-			errors.put("confirmPassword", "Confirm password is required.");
+			errors.put("pinConfirm", "err.pinConfirm.required");
 			return;
 		} 
 		String trimmedConfirmPassword = confirmPassword.trim();
 		if(!trimmedConfirmPassword.equals(password)) {
-			errors.put("confirmPassword", "Passwords do not match.");
+			errors.put("pinConfirm", "err.pinConfirm.match");
 		}		
 		
 	}

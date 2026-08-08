@@ -1,4 +1,5 @@
 <%@ page contentType="text/html; charset=UTF-8" pageEncoding="UTF-8" %>
+<%@ page import="java.util.Map" %>
 <%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core" %>
 <%@ taglib prefix="fmt" uri="http://java.sun.com/jsp/jstl/fmt" %>
 <%@ taglib prefix="fn" uri="http://java.sun.com/jsp/jstl/functions" %>
@@ -58,13 +59,17 @@
 
       <form action="/E-Wallet/walletController?action=login" method="post" novalidate>
         <% 
-	        String loginError = (String) request.getAttribute("loginError");
+        	
+        	Map<String, String> errors = (Map<String, String>) request.getAttribute("errors");
+        	
 	        String phoneNumberErr = "", pinErr = "";
-	        if(loginError != null && !loginError.isEmpty()) {	
+	        if(errors != null) for (Map.Entry<String, String> entry : errors.entrySet()) {
+	            String errorMessage = entry.getValue();
+	        
         %>
           <div class="form-alert" role="alert">
 	          <i class="bi bi-exclamation-circle-fill"></i>
-	          <span><fmt:message key="<%= loginError %>"/></span>
+	          <span><fmt:message key="<%= errorMessage %>"/></span>
           </div>
 		<%
         	phoneNumberErr = (String) request.getAttribute("phoneNumberErr");

@@ -2,6 +2,8 @@ package com.ewallet.controller;
 
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.sql.SQLException;
+import java.util.Map;
 
 import javax.servlet.ServletException;
 import javax.servlet.annotation.WebServlet;
@@ -20,6 +22,7 @@ import com.ewallet.service.EWalletUserService;
 import com.ewallet.service.impl.AccountServiceImpl;
 import com.ewallet.service.impl.EWalletBalanceServiceImpl;
 import com.ewallet.service.impl.EWalletUserServiceImpl;
+import com.ewallet.util.UserWalletValidator;
 
 
 /**
@@ -93,30 +96,49 @@ public class walletController extends HttpServlet {
 		String pin = request.getParameter("pin");
 		String pinConfirm = request.getParameter("pinConfirm");
 		String salt = "123456789mnjlhgk";
-		Wallet newWallet = new Wallet(phoneNumber, nationalId, fullName, pin,salt);
-		newWallet = eWalletUserService.signup(newWallet);
 		
-		if(newWallet != null) {
+		Map<String, String> errors = UserWalletValidator.validateForSignup(fullName,nationalId, phoneNumber, pin, pinConfirm);
+		
+		if(errors.isEmpty()){
+			Wallet newWallet = new Wallet(phoneNumber, nationalId, fullName, pin,salt);
 			
-			EWalletBalanceService eWalletBalanceService = new EWalletBalanceServiceImpl(dataSource);
-			
-			eWalletBalanceService.createWalletBalance(new WalletBalance(newWallet.getWalletId()));
-			
-			AccountService accountService = new AccountServiceImpl(dataSource);
-			accountService.addAcount(new Account(1, newWallet.getWalletId()));
 			try {
-				response.sendRedirect("login.jsp" + langQuery(request));
-			} catch (IOException e) {
-				e.printStackTrace();
+				newWallet = eWalletUserService.signup(newWallet);
+			} catch (SQLException e) {
+				errors = UserWalletValidator.parseSqlException(e);
 			}
-		} else {
-		    request.setAttribute("phoneNumberErr", phoneNumber);
-		    request.setAttribute("pinErr", pin);
+			
+			if(errors.isEmpty() && newWallet != null) {
+				
+				EWalletBalanceService eWalletBalanceService = new EWalletBalanceServiceImpl(dataSource);
+				eWalletBalanceService.createWalletBalance(new WalletBalance(newWallet.getWalletId()));
+				
+				AccountService accountService = new AccountServiceImpl(dataSource);
+				accountService.addAcount(new Account(1, newWallet.getWalletId()));
+				try {
+					response.sendRedirect("login.jsp" + langQuery(request));
+				} catch (IOException e) {
+					e.printStackTrace();
+				}
+			} 
+			if(newWallet == null) {
+				errors.put("siginUpErr", "err.generic");
+			}
+		}
+		
+		if(!errors.isEmpty()) {
+			request.setAttribute("errors", errors);
+			request.setAttribute("fullNameErrVal", fullName);
+			request.setAttribute("nationalIdErrVal", nationalId);
+			request.setAttribute("phoneNumberErrVal", phoneNumber);
+			request.setAttribute("pinErrVal", pin);
+			request.setAttribute("pinConfirmErrVal", pinConfirm);
 		    try {
-				request.getRequestDispatcher("login.jsp" +  langQuery(request)).forward(request, response);
+				request.getRequestDispatcher("register.jsp" +  langQuery(request)).forward(request, response);
 			} catch (ServletException | IOException e) {
 				e.printStackTrace();
-			}		}
+			}
+		}
 	}
 
 
@@ -126,21 +148,35 @@ public class walletController extends HttpServlet {
 		String pin = request.getParameter("pin");
 		Wallet wallet = new Wallet(phoneNumber, pin);
 		
-		wallet = eWalletUserService.login(wallet);
+		Map<String, String> errors = UserWalletValidator.validateForLogin(phoneNumber, pin);
 		
-		if(wallet != null) {
-			request.getSession().setAttribute("wallet", wallet);
-			WalletBalance walletBalance = new EWalletBalanceServiceImpl(dataSource).getWalletBalanceByWalletId(wallet.getWalletId());
-			request.getSession().setAttribute("walletBalance", walletBalance);
-	        try {
-				response.sendRedirect("home.jsp" + langQuery(request));
-			} catch (IOException e) {
-				e.printStackTrace();
-			} 
-		} else {
-		    request.setAttribute("loginError", "err.login.failed");
-		    request.setAttribute("phoneNumberErr", phoneNumber);
-		    request.setAttribute("pinErr", pin);
+		if(errors.isEmpty())  {
+			try {
+				wallet = eWalletUserService.login(wallet);
+			} catch (SQLException e) {
+				errors = UserWalletValidator.parseSqlException(e);
+			}
+			
+			if(errors.isEmpty() && wallet != null) {
+				request.getSession().setAttribute("wallet", wallet);
+				WalletBalance walletBalance = new EWalletBalanceServiceImpl(dataSource).getWalletBalanceByWalletId(wallet.getWalletId());
+				request.getSession().setAttribute("walletBalance", walletBalance);
+		        try {
+					response.sendRedirect("home.jsp" + langQuery(request));
+				} catch (IOException e) {
+					e.printStackTrace();
+				} 
+			}
+			
+			if(wallet == null) {
+				errors.put("loginErr", "err.login.failed");
+			}
+		}
+		
+		if(!errors.isEmpty()) {
+			request.setAttribute("errors", errors);
+			request.setAttribute("phoneNumberErr", phoneNumber);
+			request.setAttribute("pinErr", pin);
 		    try {
 				request.getRequestDispatcher("login.jsp" +  langQuery(request)).forward(request, response);
 			} catch (ServletException | IOException e) {
@@ -155,19 +191,35 @@ public class walletController extends HttpServlet {
 
 		String fullName = request.getParameter("fullName");
 		Wallet wallet = (Wallet) request.getSession().getAttribute("wallet");
-		wallet.setFullName(fullName);
-		System.out.println("Updating wallet with ID: " + wallet.getWalletId() + " and new full name: " + fullName);
 
-		wallet = eWalletUserService.updateUserWallet(wallet);
-		if(wallet != null) {
-			request.getSession().setAttribute("wallet", wallet);
+		Map<String, String> errors = UserWalletValidator.validateForUpdateInfo(fullName);
+		
+		if(errors.isEmpty()) {
 			try {
-				response.sendRedirect("profile.jsp" + langQuery(request));
-			} catch (IOException e) {
-				e.printStackTrace();
+				wallet.setFullName(fullName);
+				wallet = eWalletUserService.updateUserWallet(wallet);
+				
+			} catch (SQLException e) {
+				errors = UserWalletValidator.parseSqlException(e);
 			}
-		} else {
-			outPrinter.println("Wallet update failed. Please try again.");
+			
+			if(errors.isEmpty() && wallet != null) {
+				request.getSession().setAttribute("wallet", wallet);
+			}
+			else if(wallet == null) {
+				errors.put("updateInfoErr", "err.generic");
+			}
+		}
+		
+		if(!errors.isEmpty()) {
+			request.setAttribute("errors", errors);
+			request.setAttribute("fullNameErrVal", fullName);
+		}
+		
+		try {
+			request.getRequestDispatcher("profile.jsp" +  langQuery(request)).forward(request, response);
+		} catch (ServletException | IOException e) {
+			e.printStackTrace();
 		}
 	}
 
@@ -176,66 +228,105 @@ public class walletController extends HttpServlet {
 		String newPin = request.getParameter("newPin");
 		String newPinConfirm = request.getParameter("newPin2");
 		Wallet wallet = (Wallet) request.getSession().getAttribute("wallet");
-
+		Map<String, String> errors = UserWalletValidator.validateForUpdatePin(newPin, newPinConfirm);
 		if(!wallet.getPinHash().equals(currentPin)) {
-			outPrinter.println("Current PIN is incorrect.");
-			return;
-		}else if(!newPin.equals(newPinConfirm)) {
-			outPrinter.println("New PIN and confirmation do not match.");
-			return;
+			errors.put("curPinErr", "err.curPin.wrong");
 		}
-		wallet = new Wallet(wallet.getWalletId(), wallet.getFullName(), newPin, wallet.getSalt());
-		wallet = eWalletUserService.updateUserWallet(wallet);
-		if(wallet != null) {
-			request.getSession().setAttribute("wallet", wallet);
+		if(errors.isEmpty()) {
+			wallet = new Wallet(wallet.getWalletId(), wallet.getFullName(), newPin, wallet.getSalt());
+			
 			try {
-				response.sendRedirect("profile.jsp" + langQuery(request));
-			} catch (IOException e) {
-				e.printStackTrace();
+				wallet = eWalletUserService.updateUserWallet(wallet);
+			} catch (SQLException e) {
+				errors = UserWalletValidator.parseSqlException(e);
 			}
-		} else {
-			outPrinter.println("Wallet PIN update failed. Please try again.");
-		}		
+			
+			if(errors.isEmpty() && wallet != null) {
+				request.getSession().setAttribute("wallet", wallet);
+			} else if(wallet == null) {
+				errors.put("updatePinErr", "err.generic");
+			}
+		}
+		
+		if(!errors.isEmpty()) {
+			 request.setAttribute("errors", errors);
+			 request.setAttribute("curPinVal", currentPin);
+			 request.setAttribute("newPinErrVal", currentPin);
+			 request.setAttribute("newPinConfirmErrVal", currentPin);
+		}
+		
+		try {
+			request.getRequestDispatcher("profile.jsp" +  langQuery(request)).forward(request, response);
+		} catch (ServletException | IOException e) {
+			e.printStackTrace();
+		}
 	}
 
 	private void deleteUserWallet(HttpServletRequest request, HttpServletResponse response) {
 		String phoneNumber = request.getParameter("phone");
 		String pin = request.getParameter("pin");
 		
+		Map<String, String> errors = UserWalletValidator.validateForLogin(phoneNumber, pin);
 		
-		Wallet wallet = (Wallet) request.getSession().getAttribute("wallet");
+		if(errors.isEmpty()) {
 		
-		Wallet deletedWallet = new Wallet(phoneNumber, pin);
-
-		if(eWalletUserService.login(deletedWallet) == null) {
-			outPrinter.println("Invalid credentials. Please check your phone number and PIN.");
-			return;
-		}
-		
-		boolean deleteWalletBalance = new EWalletBalanceServiceImpl(dataSource).deleteWalletBalanceByWalletId(wallet.getWalletId());
-		if(!deleteWalletBalance) {
-			outPrinter.println("Failed to delete wallet balance. Please try again.");
-			return;
-		}
-		
-		boolean deleteAccount = new AccountServiceImpl(dataSource).deleteAccountByRefereceIdAndTypeId(wallet.getWalletId(), 1);
-		
-		if(!deleteAccount) {
-			outPrinter.println("Failed to delete account. Please try again.");
-			return;
-		}
-		
-		boolean isDeleted = eWalletUserService.deleteUserWallet(wallet, deletedWallet);
-		
-		if(isDeleted) {
-			request.getSession().invalidate();
+			Wallet wallet = (Wallet) request.getSession().getAttribute("wallet");
+			
+			Wallet deletedWallet = new Wallet(phoneNumber, pin);
+	
 			try {
-				response.sendRedirect("login.jsp" + langQuery(request));
-			} catch (IOException e) {
+				deletedWallet = eWalletUserService.login(deletedWallet);
+			} catch (SQLException e) {
+				errors = UserWalletValidator.parseSqlException(e);
+			}
+			
+			if(errors.isEmpty() && deletedWallet != null) {
+				
+				boolean deleteWalletBalance = new EWalletBalanceServiceImpl(dataSource).deleteWalletBalanceByWalletId(wallet.getWalletId());
+				if(!deleteWalletBalance) {
+					errors.put("walletBalance", "err.delete.failed");
+					
+				}
+				
+				boolean deleteAccount = new AccountServiceImpl(dataSource).deleteAccountByRefereceIdAndTypeId(wallet.getWalletId(), 1);
+				
+				if(!deleteWalletBalance || !deleteAccount) {
+					errors.put("deletedError", "err.delete.failed");
+					
+				}else {
+					boolean isDeleted = false;
+					try {
+						isDeleted = eWalletUserService.deleteUserWallet(wallet, deletedWallet);
+					} catch (SQLException e) {
+						errors = UserWalletValidator.parseSqlException(e);
+					}
+	
+					if(errors.isEmpty() && isDeleted) {
+						request.getSession().invalidate();
+						try {
+							response.sendRedirect("login.jsp" + langQuery(request));
+						} catch (IOException e) {
+							e.printStackTrace();
+						}
+					}else if(isDeleted == false) {
+						errors.put("deletedError", "err.delete.failed");
+					}
+				}
+			}else if(deletedWallet == null) {
+				errors.put("deletedError", "err.login.failed");
+			}
+		}
+		
+		if(!errors.isEmpty()) {
+			 request.setAttribute("errors", errors);
+			 request.setAttribute("delPhoneNumberErrVall", phoneNumber);
+			 request.setAttribute("delPinErrVal", pin);
+
+		    try {
+				request.getRequestDispatcher("profile.jsp" +  langQuery(request) + "#deleteProfileModal").forward(request, response);
+			} catch (ServletException | IOException e) {
 				e.printStackTrace();
 			}
-		} else {
-			outPrinter.println("Wallet deletion failed. Please check your credentials.");
 		}
 	}
 

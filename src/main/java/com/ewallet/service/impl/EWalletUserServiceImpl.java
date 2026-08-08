@@ -17,7 +17,7 @@ public class EWalletUserServiceImpl implements EWalletUserService {
 	}
 
 	@Override
-	public Wallet signup(Wallet wallet) {
+	public Wallet signup(Wallet wallet) throws SQLException {
 		String query = "INSERT INTO wallets (phone_number, national_id,full_name, pin_hash, salt)"
 				+ " VALUES (?, ?, ?, ?, ?)";
 		
@@ -35,13 +35,13 @@ public class EWalletUserServiceImpl implements EWalletUserService {
 			return wallet;
 			
 		}catch(SQLException e) {
-			throw new RuntimeException(e);
+			throw e;
 		}
 		
 	}
 
 	@Override
-	public Wallet login(Wallet wallet) {
+	public Wallet login(Wallet wallet)  throws SQLException {
 		String query = "SELECT * FROM wallets WHERE phone_number = ? AND pin_hash = ?";
 		try(Connection connection = dataSource.getConnection();
 				PreparedStatement preparedStatement = connection.prepareStatement(query)) {
@@ -64,13 +64,13 @@ public class EWalletUserServiceImpl implements EWalletUserService {
 				);
 			}
 		}catch(SQLException e) {
-			throw new RuntimeException(e);
+			throw e;
 		}
 		return null;
 	}
 
 	@Override
-	public Wallet updateUserWallet(Wallet wallet) {
+	public Wallet updateUserWallet(Wallet wallet) throws SQLException {
 		String query = "UPDATE wallets SET full_name = ?, pin_hash = ?, salt = ? , updated_at = ? WHERE wallet_id = ?";
 		try(Connection connection = dataSource.getConnection();
 				PreparedStatement preparedStatement = connection.prepareStatement(query)) {
@@ -87,14 +87,14 @@ public class EWalletUserServiceImpl implements EWalletUserService {
 				return getUserWalletById(wallet.getWalletId());
 			}
 		}catch(SQLException e) {
-			throw new RuntimeException(e);
+			throw e;
 		}
 		
 		return null;
 	}
 
 	@Override
-	public boolean deleteUserWallet(Wallet wallet, Wallet deletedWallet) {
+	public boolean deleteUserWallet(Wallet wallet, Wallet deletedWallet)  throws SQLException {
 		String query = "DELETE FROM wallets WHERE phone_number = ? AND pin_hash = ? AND wallet_id = ?";
 		
 		try(Connection connection = dataSource.getConnection();
@@ -107,13 +107,13 @@ public class EWalletUserServiceImpl implements EWalletUserService {
 			
 			return rowsAffected > 0;
 		}catch(SQLException e) {
-			throw new RuntimeException(e);
+			throw e;
 		}
 		
 	}
 
 	@Override
-	public Wallet getUserWalletById(long id) {
+	public Wallet getUserWalletById(long id) throws SQLException {
 String query = "SELECT * FROM wallets WHERE wallet_id = ?";
 		
 		try(Connection connection = dataSource.getConnection();
@@ -137,14 +137,14 @@ String query = "SELECT * FROM wallets WHERE wallet_id = ?";
 			}
 			
 		}catch(SQLException e) {
-			throw new RuntimeException(e);
+			throw e;
 		}
 		
 		return null;
 	}
 
 	@Override
-	public Wallet getUserWalletByPhoneNumber(String phoneNumber) {
+	public Wallet getUserWalletByPhoneNumber(String phoneNumber) throws SQLException {
 		String query = "SELECT * FROM wallets WHERE phone_number = ?";
 		
 		try(Connection connection = dataSource.getConnection();
@@ -168,7 +168,7 @@ String query = "SELECT * FROM wallets WHERE wallet_id = ?";
 			}
 			
 		}catch(SQLException e) {
-			throw new RuntimeException(e);
+			throw e;
 		}
 		
 		return null;

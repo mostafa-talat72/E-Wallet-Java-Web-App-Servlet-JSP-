@@ -1,3 +1,6 @@
+<%@page import="java.util.Map"%>
+<%@page import="com.ewallet.model.Wallet"%>
+
 <%@ page contentType="text/html; charset=UTF-8" pageEncoding="UTF-8" %>
 <%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core" %>
 <%@ taglib prefix="fmt" uri="http://java.sun.com/jsp/jstl/fmt" %>
@@ -27,7 +30,53 @@
         <a href="${appURL}cards.jsp${qLang}" class="btn btn-outline-line"><i class="bi bi-credit-card-2-front"></i> <fmt:message key="cards.title"/></a>
       </div>
     </div>
+	<%
+		Map<String, String> err = (Map<String, String>) request.getAttribute("errors");
+		String fullNameErr = "";
+		String updateInfoErr = "";
+		
+		String curPinErr ="";
+		String newPinErr = "";
+		String newPinConfirmErr = "";
+		String updatePinErr = "";
+		
+		String deletedError = "";
+		
+		String fullNameErrVal = request.getAttribute("fullNameErrVal") == null? 
+				((Wallet)request.getSession().getAttribute("wallet") == null? "" : 
+					((Wallet)request.getSession().getAttribute("wallet")).getFullName()) : (String) request.getAttribute("fullNameErrVal");
+		
+		String curPinVal = request.getAttribute("curPinVal") == null? "" :(String) request.getAttribute("curPinVal");
+		String newPinErrVal = request.getAttribute("newPinErrVal") == null? "" :(String) request.getAttribute("newPinErrVal");
+		String newPinConfirmErrVal = request.getAttribute("newPinConfirmErrVal") == null? "" :(String) request.getAttribute("newPinConfirmErrVal");
+		
+		String delPhoneNumberErrVal = request.getAttribute("delPhoneNumberErrVall") == null? "" :(String) request.getAttribute("delPhoneNumberErrVall");
+		String delPinErrVal = request.getAttribute("delPinErrVal") == null? "" :(String) request.getAttribute("delPinErrVal");
 
+		if(err != null) {
+		    for(Map.Entry<String, String> entry : err.entrySet()) {
+		        String key = entry.getKey();
+		        String value = entry.getValue();
+		        
+		        if("fullName".equals(key)) {
+		            fullNameErr = value;
+		        }else if("updateInfoErr".equals(key)) {
+		        	updateInfoErr = value;
+		        }else if("curPinErr".equals(key)) {
+		        	curPinErr = value;
+		        }else if("pin".equals(key)) {
+		            newPinErr = value;
+		        }else if("pinConfirm".equals(key)) {
+		            newPinConfirmErr = value;
+		        }else if("updatePinErr".equals(key)) {
+		        	updatePinErr = value;
+		        }else if("deletedError".equals(key)) {
+		        	deletedError = value;
+		        }
+		    }
+		}
+		
+	%>
     <div class="row g-4">
       <div class="col-12 col-lg-6">
         <div class="panel">
@@ -36,11 +85,28 @@
           </div>
           <div class="panel-body">
             <form action="/E-Wallet/walletController?action=updateUserWallet" method="post" class="validates" id="profile-form" novalidate>
+             <% 
+          	if(!updateInfoErr.isEmpty()){
+	         %>
+		       <div class="form-alert" style="text-align:start" role="alert">
+		       <i class="bi bi-exclamation-circle-fill"></i>
+		       <span><fmt:message key="<%= updateInfoErr %>"/></span>
+		       </div>
+	        <% 
+	          	}
+	         %>
               <div class="mb-3">
                 <label class="form-label" for="p-name"><fmt:message key="cards.name"/></label>
-                <input type="text" class="form-control${not empty err.fullName ? ' is-invalid' : ''}" id="p-name" name="fullName"
-                       value="${not empty param.fullName ? fn:escapeXml(param.fullName) : sessionScope.wallet.fullName}" required>
-                <c:if test="${not empty err.fullName}"><div class="form-error show"><fmt:message key="${err.fullName}"/></div></c:if>
+                <input type="text" class="form-control<%= !fullNameErr.isEmpty()? " is-invalid":"" %>" id="p-name" name="fullName"
+                       value="<%= fullNameErrVal %>" required>
+               <% 
+	          	if(!fullNameErr.isEmpty()){
+	          %>
+	          	
+	          		<div class="form-error show"><fmt:message key="<%= fullNameErr %>"/></div>
+	           <% 
+	          	}
+	          %>
               </div>
               <div class="mb-3">
                 <label class="form-label" for="p-phone"><fmt:message key="profile.phone"/></label>
@@ -66,19 +132,38 @@
             <h5 class="panel-title"><i class="bi bi-key"></i> <fmt:message key="profile.changePin"/></h5>
           </div>
           <div class="panel-body">
-<form  action="/E-Wallet/walletController?action=updateUserWalletPin" method="post" class="validates" id="pin-form" novalidate>
+		<form  action="/E-Wallet/walletController?action=updateUserWalletPin" method="post" class="validates" id="pin-form" novalidate>
+              <% 
+          	if(!updatePinErr.isEmpty()){
+	         %>
+		       <div class="form-alert" style="text-align:start" role="alert">
+		       <i class="bi bi-exclamation-circle-fill"></i>
+		       <span><fmt:message key="<%= updatePinErr %>"/></span>
+		       </div>
+	        <% 
+	          	}
+	         %>
               <div class="mb-3">
                 <label class="form-label" for="cur-pin"><fmt:message key="profile.curPin"/></label>
                 <div class="input-group">
-                  <input type="password" class="form-control${not empty err.curPin ? ' is-invalid' : ''}" id="cur-pin" name="curPin" placeholder="••••••" data-pin-input inputmode="numeric" dir="ltr" required>
+                  <input type="password" class="form-control<%= !curPinErr.isEmpty()? " is-invalid":"" %>" id="cur-pin"
+                   value="<%= curPinVal %>" name="curPin" placeholder="••••••" data-pin-input inputmode="numeric" dir="ltr" required>
                   <button class="input-group-text" type="button" data-toggle-pin="cur-pin" tabindex="-1"><i class="bi bi-eye"></i></button>
                 </div>
-                <c:if test="${not empty err.curPin}"><div class="form-error show"><fmt:message key="${err.curPin}"/></div></c:if>
+			 <% 
+	          	if(!curPinErr.isEmpty()){
+	          %>
+	          	
+	          		<div class="form-error show"><fmt:message key="<%= curPinErr %>"/></div>
+	           <% 
+	          	}
+	          %>              
               </div>
               <div class="mb-3">
                 <label class="form-label" for="new-pin"><fmt:message key="profile.newPin"/></label>
                 <div class="input-group">
-                  <input type="password" class="form-control${not empty err.newPin ? ' is-invalid' : ''}" id="new-pin" name="newPin" placeholder="••••••" data-pin-input data-pin-meter inputmode="numeric" dir="ltr" required>
+                  <input type="password" class="form-control<%= !newPinErr.isEmpty()? " is-invalid":"" %>" id="new-pin"
+                  value="<%= newPinErrVal %>" name="newPin" placeholder="••••••" data-pin-input data-pin-meter inputmode="numeric" dir="ltr" required>
                   <button class="input-group-text" type="button" data-toggle-pin="new-pin" tabindex="-1"><i class="bi bi-eye"></i></button>
                 </div>
                 <div class="pin-strong" data-pin-meter-bars>
@@ -86,15 +171,30 @@
                 </div>
                 <small class="strength-label" data-pin-meter-label></small>
                 <small class="text-muted d-block mt-1"><fmt:message key="profile.pinHint"/></small>
-                <c:if test="${not empty err.newPin}"><div class="form-error show"><fmt:message key="${err.newPin}"/></div></c:if>
+                <% 
+	          	if(!newPinErr.isEmpty()){
+	          %>
+	          	
+	          		<div class="form-error show"><fmt:message key="<%= newPinErr %>"/></div>
+	           <% 
+	          	}
+	          %>  
               </div>
               <div class="mb-4">
                 <label class="form-label" for="new-pin2"><fmt:message key="profile.confirmNewPin"/></label>
                 <div class="input-group">
-                  <input type="password" class="form-control${not empty err.newPin2 ? ' is-invalid' : ''}" id="new-pin2" name="newPin2" placeholder="••••••" data-pin-input inputmode="numeric" dir="ltr" required>
+                  <input type="password" class="form-control<%= !newPinConfirmErr.isEmpty()? " is-invalid":"" %>" id="new-pin2" 
+                  value="<%= newPinConfirmErrVal %>" name="newPin2" placeholder="••••••" data-pin-input inputmode="numeric" dir="ltr" required>
                   <button class="input-group-text" type="button" data-toggle-pin="new-pin2" tabindex="-1"><i class="bi bi-eye"></i></button>
                 </div>
-                <c:if test="${not empty err.newPin2}"><div class="form-error show"><fmt:message key="${err.newPin2}"/></div></c:if>
+                <% 
+	          	if(!newPinConfirmErr.isEmpty()){
+	          %>
+	          	
+	          		<div class="form-error show"><fmt:message key="<%= newPinConfirmErr %>"/></div>
+	           <% 
+	          	}
+	          %>  
               </div>
               <button type="submit" class="btn btn-primary" data-save-form="pin-form">
                 <i class="bi bi-shield-lock"></i> <fmt:message key="profile.changePin"/>
@@ -153,13 +253,24 @@
               <i class="bi bi-exclamation-triangle" style="color:var(--danger)"></i>
             </div>
             <p class="text-muted small mb-3"><fmt:message key="profile.deleteConfirm"/></p>
-            <c:if test="${not empty deleteError}"><div class="form-alert" style="text-align:start" role="alert"><i class="bi bi-exclamation-circle-fill"></i><span><fmt:message key="${deleteError}"/></span></div></c:if>
-<form id="delete-form" action="/E-Wallet/walletController?action=deleteUserWallet" method="post" autocomplete="off">
+		<% 
+          if(!deletedError.isEmpty()){
+         %>
+	       <div class="form-alert" style="text-align:start" role="alert">
+	       <i class="bi bi-exclamation-circle-fill"></i>
+	       <span><fmt:message key="<%= deletedError %>"/></span>
+	       </div>
+        	<% 
+          	}
+         	%>
+         	<form id="delete-form" action="/E-Wallet/walletController?action=deleteUserWallet" method="post" autocomplete="off">
               <label class="form-label d-block"><fmt:message key="profile.phone"/></label>
-              <input type="tel" class="form-control text-center mb-3${not empty deleteError ? ' is-invalid' : ''}" id="delPhone" name="phone" value="${fn:escapeXml(param.phone)}" placeholder="01XXXXXXXXX" data-phone inputmode="numeric" dir="ltr" required>
+              <input type="tel" class="form-control text-center mb-3<%= !deletedError.isEmpty()? " is-invalid":"" %>" id="delPhone" name="phone"
+               value="<%= delPhoneNumberErrVal %>" placeholder="01XXXXXXXXX" data-phone inputmode="numeric" dir="ltr" required>
               <label class="form-label d-block"><fmt:message key="profile.deletePinLabel"/></label>
               <div class="input-group mx-auto" style="max-width:190px">
-                <input type="password" class="form-control text-center" id="delPin" name="pin" placeholder="••••••" data-pin-input inputmode="numeric" dir="ltr" required>
+                <input type="password" class="form-control text-center<%= !deletedError.isEmpty()? " is-invalid":"" %>" id="delPin" name="pin"
+                value="<%= delPinErrVal %>" placeholder="••••••" data-pin-input inputmode="numeric" dir="ltr" required>
                 <button class="input-group-text" type="button" data-toggle-pin="delPin" tabindex="-1"><i class="bi bi-eye"></i></button>
               </div>
             </form>
@@ -178,3 +289,14 @@
 </main>
 
 <%@ include file="WEB-INF/partials/footer.jsp" %>
+
+<%
+    
+    if (!deletedError.isEmpty()) {
+%>
+<script>
+    new bootstrap.Modal(document.getElementById('deleteProfileModal')).show();
+</script>
+<%
+    }
+%>
