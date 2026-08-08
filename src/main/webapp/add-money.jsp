@@ -44,13 +44,14 @@
                   <div class="col-12 col-sm-6 col-md-4">
                     <div class="bank-card picker-card theme-${card.tone}" data-saved-card
                          data-number="${card.number}" data-name="${card.name}" data-bank="${card.bank}"
+                         data-label="${card.label}"
                          data-exp-m="${card.expire.substring(0,2)}" data-exp-y="20${card.expire.substring(3)}"
                          data-cvv="${card.cvv}">
                       <span class="picker-check"><i class="bi bi-check-lg"></i></span>
                       <div class="card-bg"></div>
                       <div class="card-top">
                         <span class="card-brand"><i class="bi bi-wallet2"></i> E-Wallet</span>
-                        <span class="badge badge-white">${card.bank}</span>
+                        <span class="badge badge-white">${not empty card.label ? card.label : card.bank}</span>
                       </div>
                       <div class="card-number" dir="ltr">•••• •••• •••• ${card.number.substring(12)}</div>
                       <div class="card-bottom">
@@ -89,6 +90,13 @@
               <c:if test="${not empty err.cardNumber}"><div class="form-error show" style="margin-top:.5rem"><fmt:message key="${err.cardNumber}"/></div></c:if>
             </div>
             <div class="row g-4 mb-4">
+              <div class="col-12 col-md-6">
+                <label class="form-label" for="add-label"><fmt:message key="cards.label"/></label>
+                <input type="text" class="form-control${not empty err.label ? ' is-invalid' : ''}" id="add-label" name="label"
+                       value="${fn:escapeXml(param.label)}"
+                       placeholder="Salary card" maxlength="30">
+                <c:if test="${not empty err.label}"><div class="form-error show"><fmt:message key="${err.label}"/></div></c:if>
+              </div>
               <div class="col-12 col-md-6">
                 <label class="form-label" for="add-name"><fmt:message key="add.card.name"/></label>
                 <input type="text" class="form-control${not empty err.cardName ? ' is-invalid' : ''}" id="add-name" name="cardName"

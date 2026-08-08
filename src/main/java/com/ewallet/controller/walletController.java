@@ -22,6 +22,7 @@ import com.ewallet.service.EWalletUserService;
 import com.ewallet.service.impl.AccountServiceImpl;
 import com.ewallet.service.impl.EWalletBalanceServiceImpl;
 import com.ewallet.service.impl.EWalletUserServiceImpl;
+import com.ewallet.util.LanguageUtil;
 import com.ewallet.util.UserWalletValidator;
 
 
@@ -43,13 +44,12 @@ public class walletController extends HttpServlet {
 	private DataSource dataSource;
 	
 	private EWalletUserService eWalletUserService;
-    PrintWriter outPrinter = null;
 
 	
 	 @Override
-	    public void init() throws ServletException {
-		 eWalletUserService = new EWalletUserServiceImpl(dataSource);
-	    }
+    public void init() throws ServletException {
+	 eWalletUserService = new EWalletUserServiceImpl(dataSource);
+    }
 
 	
 	protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
@@ -75,7 +75,7 @@ public class walletController extends HttpServlet {
 				deleteUserWallet(request, response);
 				break;
 			default:
-				response.sendRedirect("error.jsp"+langQuery(request));
+				response.sendRedirect("error.jsp" + LanguageUtil.langQuery(request));
 				break;
 						
 		}
@@ -116,7 +116,7 @@ public class walletController extends HttpServlet {
 				AccountService accountService = new AccountServiceImpl(dataSource);
 				accountService.addAcount(new Account(1, newWallet.getWalletId()));
 				try {
-					response.sendRedirect("login.jsp" + langQuery(request));
+					response.sendRedirect("login.jsp" + LanguageUtil.langQuery(request));
 				} catch (IOException e) {
 					e.printStackTrace();
 				}
@@ -134,7 +134,7 @@ public class walletController extends HttpServlet {
 			request.setAttribute("pinErrVal", pin);
 			request.setAttribute("pinConfirmErrVal", pinConfirm);
 		    try {
-				request.getRequestDispatcher("register.jsp" +  langQuery(request)).forward(request, response);
+				request.getRequestDispatcher("register.jsp" +  LanguageUtil.langQuery(request)).forward(request, response);
 			} catch (ServletException | IOException e) {
 				e.printStackTrace();
 			}
@@ -162,7 +162,7 @@ public class walletController extends HttpServlet {
 				WalletBalance walletBalance = new EWalletBalanceServiceImpl(dataSource).getWalletBalanceByWalletId(wallet.getWalletId());
 				request.getSession().setAttribute("walletBalance", walletBalance);
 		        try {
-					response.sendRedirect("home.jsp" + langQuery(request));
+					response.sendRedirect("home.jsp" + LanguageUtil.langQuery(request));
 				} catch (IOException e) {
 					e.printStackTrace();
 				} 
@@ -178,7 +178,7 @@ public class walletController extends HttpServlet {
 			request.setAttribute("phoneNumberErr", phoneNumber);
 			request.setAttribute("pinErr", pin);
 		    try {
-				request.getRequestDispatcher("login.jsp" +  langQuery(request)).forward(request, response);
+				request.getRequestDispatcher("login.jsp" +  LanguageUtil.langQuery(request)).forward(request, response);
 			} catch (ServletException | IOException e) {
 				e.printStackTrace();
 			}
@@ -217,7 +217,7 @@ public class walletController extends HttpServlet {
 		}
 		
 		try {
-			request.getRequestDispatcher("profile.jsp" +  langQuery(request)).forward(request, response);
+			request.getRequestDispatcher("profile.jsp" +  LanguageUtil.langQuery(request)).forward(request, response);
 		} catch (ServletException | IOException e) {
 			e.printStackTrace();
 		}
@@ -256,7 +256,7 @@ public class walletController extends HttpServlet {
 		}
 		
 		try {
-			request.getRequestDispatcher("profile.jsp" +  langQuery(request)).forward(request, response);
+			request.getRequestDispatcher("profile.jsp" +  LanguageUtil.langQuery(request)).forward(request, response);
 		} catch (ServletException | IOException e) {
 			e.printStackTrace();
 		}
@@ -304,7 +304,7 @@ public class walletController extends HttpServlet {
 					if(errors.isEmpty() && isDeleted) {
 						request.getSession().invalidate();
 						try {
-							response.sendRedirect("login.jsp" + langQuery(request));
+							response.sendRedirect("login.jsp" + LanguageUtil.langQuery(request));
 						} catch (IOException e) {
 							e.printStackTrace();
 						}
@@ -323,17 +323,11 @@ public class walletController extends HttpServlet {
 			 request.setAttribute("delPinErrVal", pin);
 
 		    try {
-				request.getRequestDispatcher("profile.jsp" +  langQuery(request) + "#deleteProfileModal").forward(request, response);
+				request.getRequestDispatcher("profile.jsp" +  LanguageUtil.langQuery(request) + "#deleteProfileModal").forward(request, response);
 			} catch (ServletException | IOException e) {
 				e.printStackTrace();
 			}
 		}
-	}
-
-	
-	private String langQuery(HttpServletRequest req) {
-	    Object lang = req.getSession().getAttribute("lang");
-	    return lang != null && lang.equals("en") ? "?lang=en" : "?lang=ar";
 	}
 
 }

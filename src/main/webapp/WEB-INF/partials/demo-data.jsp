@@ -20,9 +20,9 @@
 
 <c:if test="${empty cards}">
   <c:set var="cards" value="${ [
-      {'number':'4532015112830366','name':'Ahmed Mohamed','bank':'Banque Misr','expire':'08/28','cvv':'123','status':1,'tone':'blue'},
-      {'number':'5241150057894478','name':'Ahmed Mohamed','bank':'CIB','expire':'03/27','cvv':'456','status':1,'tone':'violet'},
-      {'number':'3778855512349102','name':'Ahmed Mohamed','bank':'QNB AlAhli','expire':'11/26','cvv':'789','status':0,'tone':'emerald'}
+      {'number':'4532015112830366','name':'Ahmed Mohamed','bank':'Banque Misr','label':'Salary card','expire':'08/28','cvv':'123','status':1,'tone':'blue'},
+      {'number':'5241150057894478','name':'Ahmed Mohamed','bank':'CIB','label':'Online purchases','expire':'03/27','cvv':'456','status':1,'tone':'violet'},
+      {'number':'3778855512349102','name':'Ahmed Mohamed','bank':'QNB AlAhli','label':'','expire':'11/26','cvv':'789','status':0,'tone':'emerald'}
   ] }"/>
 </c:if>
 

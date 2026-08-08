@@ -331,7 +331,7 @@
   }
 
   function initSavedCards() {
-    var fields = ["#card-parts [data-card-part]", "#add-name", "#add-exp-m", "#add-exp-y", "#add-cvv"];
+    var fields = ["#card-parts [data-card-part]", "#add-name", "#add-label", "#add-exp-m", "#add-exp-y", "#add-cvv"];
     function setLocked(locked) {
       fields.forEach(function (sel) {
         document.querySelectorAll(sel).forEach(function (el) {
@@ -350,6 +350,8 @@
       });
       var name = document.getElementById("add-name");
       if (name) name.value = "";
+      var label = document.getElementById("add-label");
+      if (label) label.value = "";
       var em = document.getElementById("add-exp-m");
       var ey = document.getElementById("add-exp-y");
       if (em) em.value = "";
@@ -378,6 +380,8 @@
         });
         var name = document.getElementById("add-name");
         if (name) name.value = card.getAttribute("data-name") || "";
+        var label = document.getElementById("add-label");
+        if (label) label.value = card.getAttribute("data-label") || "";
         var em = document.getElementById("add-exp-m");
         var ey = document.getElementById("add-exp-y");
         if (em) em.value = card.getAttribute("data-exp-m") || "";
@@ -649,15 +653,24 @@
           badge.className = "badge badge-neutral";
           badge.textContent = window.APPMSG ? APPMSG.inactive : "Inactive";
         }
+        var form = widget.querySelector("[data-card-toggle-form]");
+        if (form) {
+          var st = form.querySelector('input[name="status"]');
+          if (st) st.value = sw.checked ? "1" : "0";
+          form.submit();
+        }
       });
     }
-    var del = widget.querySelector("[data-delete-confirm]");
+    var del = widget.querySelector("[data-delete-card]");
     if (del) {
       del.addEventListener("click", function () {
-        var msg = del.getAttribute("data-delete-confirm");
-        if (typeof confirm === "function" && !window.confirm(msg)) return;
-        widget.remove();
-        APP.toast(APPMSG.cardRemoved);
+        var num = document.getElementById("delCardNumber");
+        if (num) num.value = del.getAttribute("data-card-number");
+        var modalEl = document.getElementById("deleteCardModal");
+        if (modalEl) {
+          var modal = bootstrap.Modal.getInstance(modalEl) || new bootstrap.Modal(modalEl);
+          modal.show();
+        }
       });
     }
   }
@@ -684,6 +697,7 @@
           parts.forEach(function (p) { number += p.value; });
           var name = form.name.value.trim();
           var bank = form.bank.value.trim();
+          var label = (form.label ? form.label.value.trim() : "") || bank;
           var expM = form.expMonth.value;
           var expY = form.expYear.value;
           var expire = (expM ? ("0" + expM).slice(-2) : "MM") + "/" + (expY ? String(expY).slice(-2) : "YY");
@@ -699,7 +713,7 @@
               '<div class="card-bg"></div>' +
               '<div class="card-top">' +
                 '<span class="card-brand"><i class="bi bi-wallet2"></i> E-Wallet</span>' +
-                '<span class="badge badge-white">' + bank + '</span>' +
+                '<span class="badge badge-white">' + label + '</span>' +
               '</div>' +
               '<div class="card-number" style="direction:ltr">' + number.slice(0, 4) + ' •••• •••• ' + number.slice(-4) + '</div>' +
               '<div class="card-bottom">' +
@@ -716,13 +730,16 @@
             '<div class="d-flex align-items-center justify-content-between mt-3">' +
               '<span class="badge badge-success"><i class="bi bi-check-circle"></i> ' + (APPMSG.active || "Active") + '</span>' +
               '<div class="d-flex gap-2">' +
+              '<form class="m-0" action="walletController?action=toggleCard" method="post" data-card-toggle-form>' +
+                '<input type="hidden" name="cardNumber" value="' + number + '">' +
+                '<input type="hidden" name="status" value="1">' +
                 '<label class="form-check form-switch m-0" title="toggle">' +
                   '<input class="form-check-input" type="checkbox" data-card-toggle checked>' +
                 '</label>' +
-                '<button type="button" class="btn btn-danger-soft btn-icon-sm" data-delete-confirm="' + (APPMSG.cardDeleteConfirm || "Remove card?") + '">' +
-                  '<i class="bi bi-trash"></i>' +
-                '</button>' +
-              '</div>' +
+              '</form>' +
+              '<button type="button" class="btn btn-danger-soft btn-icon-sm" data-delete-card data-card-number="' + number + '">' +
+                '<i class="bi bi-trash"></i>' +
+              '</button>' +
             '</div>';
           if (grid) {
             grid.insertBefore(widget, grid.firstChild);

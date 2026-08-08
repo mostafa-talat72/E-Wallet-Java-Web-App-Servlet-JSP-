@@ -11,6 +11,7 @@ public class Card {
     private Long walletId;
     private String cardNumber;
     private String cardName;
+    private String cardHolderName;
     private String bankName;
     private Date expireDate;
     private String cvv;
@@ -22,26 +23,27 @@ public class Card {
 
     // Insert Constructor
     public Card(Long walletId, String cardNumber, String cardName,
-                String bankName, Date expireDate,
-                String cvv, Integer status) {
+                String bankName, String cardHolderName, Date expireDate,
+                String cvv) {
         this.walletId = walletId;
         this.cardNumber = cardNumber;
         this.cardName = cardName;
         this.bankName = bankName;
+        this.cardHolderName = cardHolderName;
         this.expireDate = expireDate;
         this.cvv = cvv;
-        this.status = status;
     }
 
     // Full Constructor
     public Card(Long cardId, Long walletId, String cardNumber,
-                String cardName, String bankName,
+                String cardName, String cardHolderName, String bankName,
                 Date expireDate, String cvv,
                 Integer status, Timestamp createdAt) {
         this.cardId = cardId;
         this.walletId = walletId;
         this.cardNumber = cardNumber;
         this.cardName = cardName;
+        this.cardHolderName = cardHolderName;
         this.bankName = bankName;
         this.expireDate = expireDate;
         this.cvv = cvv;
@@ -77,7 +79,15 @@ public class Card {
         return cardName;
     }
 
-    public void setCardName(String cardName) {
+    public void setCardName(String cardHolderName) {
+        this.cardHolderName = cardHolderName;
+    }
+    
+    public String getCardHolderName() {
+        return cardHolderName;
+    }
+
+    public void setCardHolderName(String cardName) {
         this.cardName = cardName;
     }
 
@@ -120,6 +130,8 @@ public class Card {
     public void setCreatedAt(Timestamp createdAt) {
         this.createdAt = createdAt;
     }
+    
+    
 
     @Override
     public String toString() {
