@@ -35,7 +35,7 @@ public class CardValidator {
 	}
 	
 	public static void checkCardNumber(String cardNumber, Map<String, String> errors) {
-		if(cardNumber.isEmpty() || cardNumber.trim().isEmpty()) {
+		if(cardNumber == null || cardNumber.isEmpty() || cardNumber.trim().isEmpty()) {
 			errors.put("cardNumber", "Card Number is required.");
 			return;
 		}
@@ -46,7 +46,7 @@ public class CardValidator {
 	}
 
 	public static void checkCVV(String cvv, Map<String, String> errors) {
-		if(cvv.isEmpty() || cvv.trim().isEmpty()) {
+		if(cvv == null || cvv.isEmpty() || cvv.trim().isEmpty()) {
 			errors.put("cvv", "CVV is required.");
 			return;
 		}
@@ -57,8 +57,8 @@ public class CardValidator {
 	}
 	
 	public static void checkExpirDate(String expMonth, String expYear, Map<String, String> errors) {
-		if(expMonth.isEmpty() || expMonth.trim().isEmpty()
-				|| expYear.isEmpty() || expYear.trim().isEmpty()) {
+		if(expMonth == null || expMonth.isEmpty() || expMonth.trim().isEmpty() ||
+				expYear == null	|| expYear.isEmpty() || expYear.trim().isEmpty()) {
 			errors.put("expirDate", "Expire Month and Expire Year are required.");
 			return;
 		}

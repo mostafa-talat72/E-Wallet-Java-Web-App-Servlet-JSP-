@@ -265,8 +265,13 @@
     stepper.querySelectorAll("[data-fill]").forEach(function (el) {
       var input = document.querySelector(el.getAttribute("data-fill"));
       if (input && input.value) {
-        el.textContent = input.value;
-        if (input.type === "number") el.classList.add("amount-selected");
+        if (el.getAttribute("data-fill-mask") === "cc") {
+          var n = input.value.replace(/\D/g, "");
+          el.textContent = n.length >= 4 ? "•••• •••• •••• " + n.slice(-4) : "—";
+        } else {
+          el.textContent = input.value;
+          if (input.type === "number") el.classList.add("amount-selected");
+        }
       } else {
         el.textContent = "—";
         el.classList.remove("amount-selected");
@@ -293,32 +298,49 @@
         }
       }
 
+      function advance(panel) {
+        if (panel && panel.querySelector("#saved-cards") && !panel.querySelector("#saved-cards .selected")) {
+          APP.toast(APPMSG.selectCard, "error");
+          return;
+        }
+        var form = panel && panel.querySelector(".validates");
+        if (form) {
+          if (!form.checkValidity()) {
+            form.reportValidity();
+            var bad = form.querySelector(":invalid");
+            APP.toast((bad ? ("Missing: " + (bad.name || bad.id)) : APPMSG.invalid), "error");
+            return;
+          }
+        }
+        var otpBox = panel && panel.querySelector(".otp-wrap .otp-row:not(.card-parts) [data-otp]");
+        if (otpBox) {
+          var otpRow = otpBox.closest(".otp-row");
+          var boxes = otpRow.querySelectorAll("[data-otp]");
+          var code = "";
+          boxes.forEach(function (b) { code += b.value; });
+          if (code.length < boxes.length) {
+            APP.toast(APPMSG.invalid, "error");
+            return;
+          }
+          if (code !== "123456") {
+            APP.toast(APPMSG.wrongPin, "error");
+            return;
+          }
+        }
+        fillPreviews(stepper);
+        show(current + 1);
+      }
+      stepper.advance = advance;
+
       stepper.querySelectorAll("[data-next]").forEach(function (btn) {
         btn.addEventListener("click", function () {
-          var panel = btn.closest(".step-panel");
-          var form = panel && panel.querySelector(".validates");
-          if (form) {
-            if (!form.checkValidity()) {
-              form.reportValidity();
-              APP.toast(APPMSG.invalid, "error");
-              return;
-            }
-          }
-          var otpBox = panel && panel.querySelector(".otp-row [data-otp]");
-          if (otpBox) {
-            var otpRow = otpBox.closest(".otp-row");
-            var boxes = otpRow.querySelectorAll("[data-otp]");
-            var code = "";
-            boxes.forEach(function (b) { code += b.value; });
-            if (code.length < boxes.length) {
-              APP.toast(APPMSG.invalid, "error");
-              return;
-            }
-            if (code !== "123456") {
-              APP.toast(APPMSG.wrongPin, "error");
-              return;
-            }
-          }
+          advance(btn.closest(".step-panel"));
+        });
+      });
+      stepper.querySelectorAll("[data-finish]").forEach(function (btn) {
+        btn.addEventListener("click", function () {
+          var ref = document.getElementById("ok-ref-num");
+          if (ref) ref.textContent = Math.floor(100000 + Math.random() * 900000);
           fillPreviews(stepper);
           show(current + 1);
         });
@@ -331,7 +353,7 @@
   }
 
   function initSavedCards() {
-    var fields = ["#card-parts [data-card-part]", "#add-name", "#add-label", "#add-exp-m", "#add-exp-y", "#add-cvv"];
+    var fields = ["#add-card-number", "#add-label", "#add-holder", "#add-cvv"];
     function setLocked(locked) {
       fields.forEach(function (sel) {
         document.querySelectorAll(sel).forEach(function (el) {
@@ -344,18 +366,12 @@
       document.querySelectorAll("#saved-cards [data-saved-card]").forEach(function (c) {
         c.classList.remove("selected");
       });
-      document.querySelectorAll("#card-parts [data-card-part]").forEach(function (p) {
-        p.value = "";
-        p.classList.remove("has-value");
-      });
-      var name = document.getElementById("add-name");
-      if (name) name.value = "";
+      var hnum = document.getElementById("add-card-number");
+      if (hnum) hnum.value = "";
       var label = document.getElementById("add-label");
       if (label) label.value = "";
-      var em = document.getElementById("add-exp-m");
-      var ey = document.getElementById("add-exp-y");
-      if (em) em.value = "";
-      if (ey) ey.value = "";
+      var holder = document.getElementById("add-holder");
+      if (holder) holder.value = "";
       var cvv = document.getElementById("add-cvv");
       if (cvv) cvv.value = "";
       setLocked(false);
@@ -366,60 +382,22 @@
       card.addEventListener("click", function () {
         if (card.classList.contains("selected")) {
           clearSelection();
-          var first = document.querySelector("#card-parts [data-card-part]");
-          if (first) first.focus();
           return;
         }
         clearSelection();
         card.classList.add("selected");
         var num = (card.getAttribute("data-number") || "").replace(/\s/g, "");
-        document.querySelectorAll("#card-parts [data-card-part]").forEach(function (p, i) {
-          var v = num.slice(i * 4, i * 4 + 4);
-          p.value = v;
-          p.classList.toggle("has-value", !!v);
-        });
-        var name = document.getElementById("add-name");
-        if (name) name.value = card.getAttribute("data-name") || "";
+        var hnum = document.getElementById("add-card-number");
+        if (hnum) hnum.value = num;
         var label = document.getElementById("add-label");
         if (label) label.value = card.getAttribute("data-label") || "";
-        var em = document.getElementById("add-exp-m");
-        var ey = document.getElementById("add-exp-y");
-        if (em) em.value = card.getAttribute("data-exp-m") || "";
-        if (ey) ey.value = card.getAttribute("data-exp-y") || "";
+        var holder = document.getElementById("add-holder");
+        if (holder) holder.value = card.getAttribute("data-holder") || "";
         setLocked(true);
         var cancel = document.querySelector("[data-cancel-card]");
         if (cancel) cancel.classList.remove("d-none");
-        var info = document.getElementById("cvv-card-info");
-        if (info) info.textContent = "•••• " + num.slice(-4);
-        var modalEl = document.getElementById("cvvModal");
-        if (modalEl) {
-          var mcvv = document.getElementById("modal-cvv");
-          if (mcvv) mcvv.value = "";
-          var modal = bootstrap.Modal.getInstance(modalEl) || new bootstrap.Modal(modalEl);
-          modal.show();
-          if (mcvv) mcvv.focus();
-        }
-      });
-    });
-    APP.sel("[data-cvv-confirm]").forEach(function (btn) {
-      btn.addEventListener("click", function () {
-        var mcvv = document.getElementById("modal-cvv");
-        var cvvVal = mcvv ? mcvv.value : "";
-        if (cvvVal.length < 3) {
-          APP.toast(APPMSG.invalid, "error");
-          if (mcvv) mcvv.focus();
-          return;
-        }
         var cvv = document.getElementById("add-cvv");
-        if (cvv) cvv.value = cvvVal;
-        var modalEl = document.getElementById("cvvModal");
-        if (modalEl) {
-          var modal = bootstrap.Modal.getInstance(modalEl) || new bootstrap.Modal(modalEl);
-          modal.hide();
-        }
-        var panel = document.querySelector(".step-panel:not(.d-none)");
-        var nextBtn = panel && panel.querySelector("[data-next]");
-        if (nextBtn) nextBtn.click();
+        if (cvv) cvv.value = card.getAttribute("data-cvv") || "";
       });
     });
     APP.sel("[data-cancel-card]").forEach(function (btn) {
@@ -644,7 +622,7 @@
     var sw = widget.querySelector("[data-card-toggle]");
     if (sw) {
       sw.addEventListener("change", function () {
-        var badge = widget.querySelector(".badge");
+        var badge = widget.querySelector("[data-card-status]");
         if (!badge) return;
         if (sw.checked) {
           badge.className = "badge badge-success";
@@ -664,8 +642,19 @@
     var del = widget.querySelector("[data-delete-card]");
     if (del) {
       del.addEventListener("click", function () {
-        var num = document.getElementById("delCardNumber");
-        if (num) num.value = del.getAttribute("data-card-number");
+        var id = document.getElementById("delCardId");
+        if (id) id.value = del.getAttribute("data-card-id") || "";
+        function fill(elId, val) {
+          var el = document.getElementById(elId);
+          if (el) el.textContent = val || "—";
+        }
+        fill("delCardLabel", del.getAttribute("data-card-label"));
+        fill("delCardHolder", del.getAttribute("data-card-holder"));
+        fill("delCardBank", del.getAttribute("data-card-bank"));
+        fill("delCardExpire", del.getAttribute("data-card-expire"));
+        var num = del.getAttribute("data-card-number") || "";
+        if (num) num = num.slice(0, 4) + " •••• •••• " + num.slice(-4);
+        fill("delCardNumber", num);
         var modalEl = document.getElementById("deleteCardModal");
         if (modalEl) {
           var modal = bootstrap.Modal.getInstance(modalEl) || new bootstrap.Modal(modalEl);
@@ -728,16 +717,16 @@
               '</div>' +
             '</div>' +
             '<div class="d-flex align-items-center justify-content-between mt-3">' +
-              '<span class="badge badge-success"><i class="bi bi-check-circle"></i> ' + (APPMSG.active || "Active") + '</span>' +
+              '<span class="badge badge-success" data-card-status><i class="bi bi-check-circle"></i> ' + (APPMSG.active || "Active") + '</span>' +
               '<div class="d-flex gap-2">' +
-              '<form class="m-0" action="walletController?action=toggleCard" method="post" data-card-toggle-form>' +
-                '<input type="hidden" name="cardNumber" value="' + number + '">' +
+              '<form class="m-0" action="cardController?action=updateCardStatus" method="post" data-card-toggle-form>' +
+                '<input type="hidden" name="cardId" value="">' +
                 '<input type="hidden" name="status" value="1">' +
                 '<label class="form-check form-switch m-0" title="toggle">' +
                   '<input class="form-check-input" type="checkbox" data-card-toggle checked>' +
                 '</label>' +
               '</form>' +
-              '<button type="button" class="btn btn-danger-soft btn-icon-sm" data-delete-card data-card-number="' + number + '">' +
+              '<button type="button" class="btn btn-danger-soft btn-icon-sm" data-delete-card data-card-id="" data-card-number="' + number + '" data-card-label="' + (label || "") + '" data-card-holder="' + name + '" data-card-bank="' + bank + '" data-card-expire="' + expire + '">' +
                 '<i class="bi bi-trash"></i>' +
               '</button>' +
             '</div>';

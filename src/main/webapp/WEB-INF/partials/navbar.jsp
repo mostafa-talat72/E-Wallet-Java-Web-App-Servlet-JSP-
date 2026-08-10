@@ -19,14 +19,14 @@
     <a href="${appURL}send-money.jsp${qLang}" class="nav-link ${activeMenu == 'send' ? 'active' : ''}">
       <i class="bi bi-send-fill"></i><span><fmt:message key="nav.send"/></span>
     </a>
-    <a href="${appURL}add-money.jsp${qLang}" class="nav-link ${activeMenu == 'add' ? 'active' : ''}">
+    <a href="/E-Wallet/cardController?action=getAllCards&redirect=add-money" class="nav-link ${activeMenu == 'add' ? 'active' : ''}">
       <i class="bi bi-plus-circle-fill"></i><span><fmt:message key="nav.add"/></span>
     </a>
     <a href="${appURL}atmotp.jsp${qLang}" class="nav-link ${activeMenu == 'withdraw' ? 'active' : ''}">
       <i class="bi bi-cash-stack"></i><span><fmt:message key="nav.withdraw"/></span>
     </a>
     <div class="nav-section-label"><fmt:message key="nav.account"/></div>
-    <a href="${appURL}cards.jsp${qLang}" class="nav-link ${activeMenu == 'cards' ? 'active' : ''}">
+    <a href="/E-Wallet/cardController?action=getAllCards&redirect=cards" class="nav-link ${activeMenu == 'cards' ? 'active' : ''}">
       <i class="bi bi-credit-card-2-front-fill"></i><span><fmt:message key="nav.cards"/></span>
     </a>
     <a href="${appURL}transactions.jsp${qLang}" class="nav-link ${activeMenu == 'transactions' ? 'active' : ''}">

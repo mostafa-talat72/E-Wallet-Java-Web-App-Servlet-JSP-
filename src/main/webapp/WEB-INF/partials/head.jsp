@@ -35,7 +35,8 @@ window.APPMSG = {
   inactive: '<fmt:message key="common.inactive"/>',
   cardsHolder: '<fmt:message key="cards.holder"/>',
   cardsExpires: '<fmt:message key="cards.expires"/>',
-  cardDeleteConfirm: '<fmt:message key="cards.deleteConfirm"/>'
+  cardDeleteConfirm: '<fmt:message key="cards.deleteConfirm"/>',
+  selectCard: '<fmt:message key="js.selectCard"/>'
 };
 </script>
 </head>

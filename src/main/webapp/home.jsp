@@ -24,7 +24,7 @@
         <a href="${appURL}send-money.jsp${qLang}" class="btn btn-soft">
           <i class="bi bi-send"></i> <fmt:message key="dash.quick.send"/>
         </a>
-        <a href="${appURL}add-money.jsp${qLang}" class="btn btn-primary">
+        <a href="${appURL}cardController?action=getAllCards&redirect=add-money" class="btn btn-primary">
           <i class="bi bi-plus-lg"></i> <fmt:message key="dash.quick.add"/>
         </a>
       </div>
@@ -66,7 +66,7 @@
               <a href="${appURL}send-money.jsp${qLang}" class="btn btn-light-soft">
                 <i class="bi bi-send"></i> <fmt:message key="dash.quick.send"/>
               </a>
-              <a href="${appURL}add-money.jsp${qLang}" class="btn btn-light-soft">
+              <a href="${appURL}cardController?action=getAllCards&redirect=add-money" class="btn btn-light-soft">
                 <i class="bi bi-plus-lg"></i> <fmt:message key="dash.quick.add"/>
               </a>
               <a href="${appURL}atmotp.jsp${qLang}" class="btn btn-light-soft">
@@ -88,7 +88,7 @@
                 <span class="quick-icon tone-blue"><i class="bi bi-send"></i></span>
                 <fmt:message key="dash.quick.send"/>
               </a>
-              <a href="${appURL}add-money.jsp${qLang}" class="quick-item">
+              <a href="${appURL}cardController?action=getAllCards&redirect=add-money" class="quick-item">
                 <span class="quick-icon tone-emerald"><i class="bi bi-plus-circle"></i></span>
                 <fmt:message key="dash.quick.add"/>
               </a>

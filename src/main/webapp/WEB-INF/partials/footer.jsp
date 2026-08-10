@@ -3,6 +3,6 @@
   <script src="${appURL}assets/vendor/chartjs/chart.umd.min.js"></script>
 </c:if>
 <script src="${appURL}assets/vendor/bootstrap/js/bootstrap.bundle.min.js"></script>
-<script src="${appURL}assets/js/main.js"></script>
+<script src="${appURL}assets/js/main.js?v=20260810b"></script>
 </body>
 </html>

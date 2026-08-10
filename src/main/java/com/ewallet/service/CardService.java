@@ -9,14 +9,15 @@ public interface CardService {
 	
 	boolean addCard(Card card)throws SQLException;
 	
-	boolean updateCardStatus(Card card)throws SQLException;
-	
-	boolean deleteCard(Card card)throws SQLException;
-	
-	boolean deleteAllCardsByWalletId(Long walletId)throws SQLException;
-	
-	Card getCardByCardId(long cardId)throws SQLException;
-	
-	List<Card> getAllCardsByWalletId(long walletId)throws SQLException;
+	List<Card> getAllCardsByWalletId(long walletId);
 
+	boolean updateCardStatus(Long cardId, int status);
+	
+	boolean deleteCard(long cardId, long walletId);
+	
+	boolean deleteAllCardsByWalletId(Long walletId);
+	
+	Card getCardByCardId(long cardId);
+	
+	Card getCardByWalletIdAndCardNumber(long walletId, String cardNumber);
 }

@@ -24,4 +24,19 @@ public class DateUtil {
 	    LocalDate date = expireDate.toLocalDate();
 	    return String.valueOf(date.getYear());
 	}
+	
+	
+	public static boolean isExpired(Date expireDate) {
+
+	    if (expireDate == null) {
+	        return true;
+	    }
+
+	    LocalDate expiration = expireDate.toLocalDate();
+	    LocalDate current = LocalDate.now();
+
+	    return expiration.getYear() < current.getYear()
+	            || (expiration.getYear() == current.getYear()
+	            && expiration.getMonthValue() <= current.getMonthValue());
+	}
 }

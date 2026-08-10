@@ -20,6 +20,7 @@ import com.ewallet.service.AccountService;
 import com.ewallet.service.EWalletBalanceService;
 import com.ewallet.service.EWalletUserService;
 import com.ewallet.service.impl.AccountServiceImpl;
+import com.ewallet.service.impl.CardServiceImpl;
 import com.ewallet.service.impl.EWalletBalanceServiceImpl;
 import com.ewallet.service.impl.EWalletUserServiceImpl;
 import com.ewallet.util.LanguageUtil;
@@ -283,14 +284,12 @@ public class walletController extends HttpServlet {
 			if(errors.isEmpty() && deletedWallet != null) {
 				
 				boolean deleteWalletBalance = new EWalletBalanceServiceImpl(dataSource).deleteWalletBalanceByWalletId(wallet.getWalletId());
-				if(!deleteWalletBalance) {
-					errors.put("walletBalance", "err.delete.failed");
-					
-				}
 				
 				boolean deleteAccount = new AccountServiceImpl(dataSource).deleteAccountByRefereceIdAndTypeId(wallet.getWalletId(), 1);
 				
-				if(!deleteWalletBalance || !deleteAccount) {
+				boolean deleteAllCards= new CardServiceImpl(dataSource).deleteAllCardsByWalletId(wallet.getWalletId());
+
+				if(!deleteWalletBalance || !deleteAccount || !deleteAllCards) {
 					errors.put("deletedError", "err.delete.failed");
 					
 				}else {
@@ -323,7 +322,7 @@ public class walletController extends HttpServlet {
 			 request.setAttribute("delPinErrVal", pin);
 
 		    try {
-				request.getRequestDispatcher("profile.jsp" +  LanguageUtil.langQuery(request) + "#deleteProfileModal").forward(request, response);
+				request.getRequestDispatcher("profile.jsp" +  LanguageUtil.langQuery(request)).forward(request, response);
 			} catch (ServletException | IOException e) {
 				e.printStackTrace();
 			}
