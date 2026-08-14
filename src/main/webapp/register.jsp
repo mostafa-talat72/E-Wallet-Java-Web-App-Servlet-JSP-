@@ -198,12 +198,6 @@
           %>
           </div>
         </div>
-        <div class="form-check mb-4">
-          <input class="form-check-input" type="checkbox" id="terms" required>
-          <label class="form-check-label small fw-semibold text-muted" for="terms">
-            <fmt:message key="auth.agree"/> <a href="#" class="fw-bold"><fmt:message key="auth.terms"/></a>
-          </label>
-        </div>
         <button type="submit" class="btn btn-primary btn-lg w-100">
           <fmt:message key="auth.registerBtn"/> <i class="bi bi-person-plus"></i>
         </button>

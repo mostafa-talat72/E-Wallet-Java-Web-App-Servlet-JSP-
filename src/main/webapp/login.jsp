@@ -105,13 +105,7 @@
             </button>
           </div>
         </div>
-        <div class="d-flex justify-content-between align-items-center mb-4">
-          <div class="form-check">
-            <input class="form-check-input" type="checkbox" id="remember" checked>
-            <label class="form-check-label small fw-semibold text-muted" for="remember">
-              <fmt:message key="auth.remember"/>
-            </label>
-          </div>
+        <div class="d-flex justify-content-end mb-4">
           <a href="#" class="small fw-bold"><fmt:message key="auth.forgotPin"/></a>
         </div>
         <button type="submit" class="btn btn-primary btn-lg w-100">
