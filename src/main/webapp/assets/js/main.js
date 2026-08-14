@@ -1,6 +1,25 @@
 (function () {
   "use strict";
 
+  // -------------------------------------------------------------------------
+  // Global front-end behavior for the E-Wallet web application.
+  //
+  // - APP helpers: APP.sel() / APP.one() DOM shortcuts and APP.toast() for the
+  //   floating toast notifications.
+  // - Layout: mobile sidebar toggle, balance show/hide, PIN/OTP eye toggles.
+  // - Input handling: phone / card / expiry / CVV / PIN masks, 4-box card
+  //   number parts, OTP digit rows, quick amount chips, contact chips.
+  // - Cards: expiry month/year selects, saved-card picker, add-card modal
+  //   (builds a card widget on the fly), delete-card modal, card status switch.
+  // - Wizards: multi-step panels (data-stepper) with validation, countdown
+  //   chips, fee calculation and preview filling.
+  // - Transactions list: filter pills, free-text search and pagination.
+  // - Misc: notifications list, copy-to-clipboard, PIN strength meter,
+  //   Chart.js cashflow chart, payment method tabs, profile delete guard.
+  //
+  // Every init* function is called once from the DOMContentLoaded handler.
+  // -------------------------------------------------------------------------
+
   var APP = {
     toast: function (msg, type) {
       var stack = document.querySelector(".toast-stack");
@@ -23,6 +42,8 @@
   };
   window.APP = APP;
 
+  // Mobile sidebar: toggles the "open" class on the sidebar panel and shows or
+  // hides the dark overlay behind it.
   function initSidebar() {
     var toggle = APP.one("#sidebarToggle");
     var overlay = APP.one("#sidebarOverlay");
@@ -38,6 +59,9 @@
     });
   }
 
+  // PIN and OTP visibility toggles: flips password inputs to text and swaps the
+  // eye icon. For OTP, every box inside the closest step panel or OTP wrapper
+  // is toggled together so the whole code is revealed at once.
   function initTogglePin() {
     APP.sel("[data-toggle-pin]").forEach(function (btn) {
       btn.addEventListener("click", function () {
@@ -61,11 +85,17 @@
     });
   }
 
+  // Strips non-digit characters from an input and truncates it to the maximum
+  // length (from the data-max attribute or the caller-provided fallback).
   function maskDigits(input, max) {
     var limit = parseInt(input.getAttribute("data-max"), 10) || max;
     input.value = input.value.replace(/\D/g, "").slice(0, limit);
   }
 
+  // Card number split across four 4-digit boxes: auto-advances to the next box
+  // once four digits are typed, backspace on an empty box moves backwards,
+  // arrow keys / space navigate, and pasting a full number fans out across the
+  // remaining boxes.
   function initCardParts() {
     APP.sel("input[data-card-part]").forEach(function (part, i, arr) {
       part.addEventListener("input", function () {
@@ -110,6 +140,9 @@
     });
   }
 
+  // Expiry month/year dropdowns: rebuilds both option lists so that only valid
+  // future dates are offered (months of the current year up to the selected
+  // year are excluded, and the year range starts at the current year).
   function initExpirySelects() {
     APP.sel("select[data-exp-m]").forEach(function (mSel) {
       var ySel = mSel.closest(".d-flex").querySelector("select[data-exp-y]");
@@ -151,6 +184,9 @@
     });
   }
 
+  // Attribute-driven input masks: phone (11 digits), card number (16 digits
+  // grouped in fours), expiry (MM/YY with the slash inserted automatically),
+  // CVV (3 digits) and PIN (6 digits).
   function initMasks() {
     APP.sel("[data-phone]").forEach(function (el) {
       el.addEventListener("input", function () { maskDigits(el, 11); });
@@ -176,6 +212,9 @@
     });
   }
 
+  // OTP digit boxes: keeps one digit per box, fans multi-digit input (e.g. a
+  // paste) across the row, moves focus forward, and backspace on an empty box
+  // clears the previous one.
   function initOtps() {
     APP.sel("[data-otp]").forEach(function (box) {
       box.addEventListener("input", function () {
@@ -205,12 +244,15 @@
     });
   }
 
+  // Returns true when every OTP box in the row is filled.
   function checkOtpComplete(row) {
     if (!row) return;
     var boxes = row.querySelectorAll("[data-otp]");
     return Array.prototype.every.call(boxes, function (b) { return b.value !== ""; });
   }
 
+  // Demo OTP verification: requires all boxes to be filled, accepts the fixed
+  // code "123456", then hides the stepper and reveals the success panel.
   function initOtpVerify() {
     APP.sel("[data-otp-verify]").forEach(function (btn) {
       btn.addEventListener("click", function () {
@@ -237,6 +279,10 @@
     });
   }
 
+  // Countdown chips: ticks down each second from the data-countdown seconds or
+  // the data-countdown-until timestamp. When zero is reached it either
+  // redirects to data-countdown-url or hides the chip and shows the resend
+  // link. A dataset.started guard prevents a chip from being started twice.
   function initCountdown(ctx) {
     var scope = ctx || document;
     APP.sel("[data-countdown]", scope).forEach(function (chip) {
@@ -250,11 +296,14 @@
           seconds = Math.max(0, Math.floor((tUntil - Date.now()) / 1000));
         }
       }
+      // Optional target to visit when the countdown runs out (e.g. head back to
+      // the login page once an OTP expires).
       var doneUrl = chip.getAttribute("data-countdown-url");
       var resend = document.querySelector("[data-resend]");
       function tick() {
         if (seconds <= 0) {
           if (doneUrl) {
+            // Countdown expired: leave the page so the flow cannot continue.
             window.location.href = doneUrl;
             return;
           }
@@ -273,6 +322,9 @@
     });
   }
 
+  // Live fee preview inside a stepper: reads the source amount input and writes
+  // the computed fee (and total when a target element exists) into the
+  // [data-fee-calc] element. Fee = amount x data-fee-rate.
   function initFeeCalc(stepper) {
     stepper.querySelectorAll("[data-fee-calc]").forEach(function (el) {
       var source = document.querySelector(el.getAttribute("data-fee-source") || "#amount");
@@ -298,6 +350,8 @@
     });
   }
 
+  // Copies entered form values into the current panel's preview elements
+  // (data-fill). Card numbers are masked to show only the last four digits.
   function fillPreviews(stepper) {
     stepper.querySelectorAll("[data-fill]").forEach(function (el) {
       var input = document.querySelector(el.getAttribute("data-fill"));
@@ -316,6 +370,8 @@
     });
   }
 
+  // Same preview filling as fillPreviews but for a "done" panel that is
+  // already visible when the page loads.
   function fillDonePanel(panel) {
     panel.querySelectorAll("[data-fill]").forEach(function (el) {
       var input = document.querySelector(el.getAttribute("data-fill"));
@@ -334,6 +390,11 @@
     });
   }
 
+  // Multi-step wizard engine: tracks the current panel index, toggles panel and
+  // dot visibility, validates the outgoing panel (HTML5 validity, mandatory
+  // saved-card selection, OTP completeness), fills the previews, and starts the
+  // per-panel countdowns and fee calculators. Wires data-next / data-prev /
+  // data-finish buttons and exposes stepper.advance for programmatic use.
   function initSteps() {
     APP.sel("[data-stepper]").forEach(function (stepper) {
       var panels = Array.prototype.slice.call(stepper.querySelectorAll(".step-panel"));
@@ -406,6 +467,9 @@
     });
   }
 
+  // Saved-card picker: clicking a saved card fills the add-card fields, locks
+  // them (card-fields-locked) and shows the cancel button; clicking the card
+  // again or the cancel button restores the unlocked empty state.
   function initSavedCards() {
     var fields = ["#add-card-number", "#add-label", "#add-holder", "#add-cvv"];
     function setLocked(locked) {
@@ -461,6 +525,9 @@
     });
   }
 
+  // Quick amount chips: clicking a chip highlights it and writes its
+  // data-value into the amount input named by the row's data-amount-chips
+  // attribute.
   function initQuickAmounts() {
     APP.sel("[data-amount-chips]").forEach(function (row) {
       row.addEventListener("click", function (e) {
@@ -474,12 +541,18 @@
     });
   }
 
+  // Transactions list: combines filter pills, a free-text search and
+  // pagination. applyTxFilter rebuilds filteredRows from the visible rows that
+  // match both the current pill and the search text, then renderPager displays
+  // only the slice for the current page and redraws the page-number buttons.
   function initTxFilters() {
     var list = APP.one("[data-tx-list]");
     if (!list) return;
     var searches = Array.prototype.slice.call(APP.sel("[data-tx-search]"));
+    // Rows shown per page, taken from the list's data-page-size attribute.
     var pageSize = parseInt(list.getAttribute("data-page-size"), 10) || 8;
     var page = 0;
+    // Rows that currently pass the active filter pill and the search text.
     var filteredRows = [];
     var panel = list.closest(".panel");
     var rangeEl = panel ? panel.querySelector("[data-tx-range]") : null;
@@ -493,6 +566,8 @@
       for (var i = from; i <= to; i++) a.push(i);
       return a;
     }
+    // Page-window builder: always keeps the first and last page visible with
+    // the current page in the middle, inserting "..." for the gaps.
     function paginationWindow(current, pages) {
       if (pages <= 7) return range(1, pages);
       var out = [1];
@@ -505,6 +580,8 @@
       return out;
     }
     function renderPager() {
+      // Hides every row first, then re-shows only the slice belonging to the
+      // current page, so filter and page changes always start from a clean slate.
       var pages = Math.max(1, Math.ceil(filteredRows.length / pageSize));
       if (page > pages - 1) page = pages - 1;
       list.querySelectorAll("[data-tx-row]").forEach(function (row) { row.style.display = "none"; });
@@ -562,6 +639,9 @@
       if (filter === "all") return true;
       return type === filter;
     }
+    // Rebuilds filteredRows from the rows that match the pill and the search
+    // text, resets to the first page and redraws the pager. "receive" matches
+    // rows with a positive amount; other pills match the row's data-type.
     function applyTxFilter(text, filter) {
       filteredRows = [];
       list.querySelectorAll("[data-tx-row]").forEach(function (row) {
@@ -585,6 +665,9 @@
     applyTxFilter(getSearchValue(), "all");
   }
 
+  // Notifications list: "mark all" clears the unread state on every item,
+  // clicking an unread item marks it read, and the delete button removes the
+  // item without triggering the row click (stopPropagation).
   function initNotif() {
     APP.sel("[data-mark-all]").forEach(function (btn) {
       btn.addEventListener("click", function () {
@@ -613,6 +696,8 @@
     });
   }
 
+  // Copy-to-clipboard buttons: copies the data-copy attribute text and shows a
+  // toast; falls back to a plain toast when the Clipboard API is unavailable.
   function initCopy() {
     APP.sel("[data-copy]").forEach(function (btn) {
       btn.addEventListener("click", function () {
@@ -626,6 +711,8 @@
     });
   }
 
+  // PIN strength meter: scores the input (presence, length, digits, repeated
+  // runs and sequential patterns) and styles the bars and label accordingly.
   function initPinStrength() {
     APP.sel("[data-pin-meter]").forEach(function (input) {
       var meter = APP.one("[data-pin-meter-bars]");
@@ -649,6 +736,8 @@
     });
   }
 
+  // Balance show/hide toggle: replaces the visible balance with dots and back,
+  // using the data-full attribute as the source of the real value.
   function initBalanceToggle() {
     var btn = APP.one("[data-balance-toggle]");
     if (!btn) return;
@@ -667,6 +756,8 @@
     });
   }
 
+  // Dashboard cashflow chart: draws the 7-day income vs. expenses line chart
+  // with Chart.js when the canvas and the library are both present.
   function initChart() {
     var el = APP.one("#cashflowChart");
     if (!el || !window.Chart) return;
@@ -718,6 +809,8 @@
     });
   }
 
+  // Payment method tabs: marks the clicked tab as active and shows only the
+  // [data-method-panel] that matches it.
   function initMethodTabs() {
     APP.sel("[data-method-tab]").forEach(function (tab) {
       tab.addEventListener("click", function () {
@@ -733,6 +826,8 @@
     });
   }
 
+  // Contact chips: clicking a chip fills the phone input it points to with the
+  // number stored in the chip's data-number attribute.
   function initContactChips() {
     APP.sel("[data-contact]").forEach(function (chip) {
       chip.addEventListener("click", function () {
@@ -742,6 +837,9 @@
     });
   }
 
+  // Behavior for one card widget (also reused for cards added at runtime): the
+  // enable/disable switch submits the status form and updates the badge, and
+  // the delete button fills the confirmation modal with the card's details.
   function bindCardWidget(widget) {
     var sw = widget.querySelector("[data-card-toggle]");
     if (sw) {
@@ -788,6 +886,10 @@
     }
   }
 
+  // Card modals: auto-opens the add-card modal when the URL contains addCard=1,
+  // the add-card button validates the form, builds a new card widget (tone
+  // cycles per card count) and inserts it at the top of the grid, and existing
+  // widgets get the bindCardWidget behavior.
   function initCardModals() {
     if (/[?&]addCard=1/.test(window.location.search)) {
       var autoModal = document.getElementById("addCardModal");
@@ -871,6 +973,8 @@
     APP.sel("[data-card-widget]").forEach(bindCardWidget);
   }
 
+  // Profile deletion guard: blocks form submission unless the phone number is
+  // exactly 11 digits and the PIN exactly 6, focusing the offending field.
   function initProfileDelete() {
     var form = document.getElementById("delete-form");
     var pin = document.getElementById("delPin");
@@ -887,6 +991,7 @@
     });
   }
 
+  // Initialize every feature once the DOM is ready.
   document.addEventListener("DOMContentLoaded", function () {
     initSidebar();
     initTogglePin();

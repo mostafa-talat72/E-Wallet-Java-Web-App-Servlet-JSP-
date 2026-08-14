@@ -12,6 +12,11 @@ import javax.sql.DataSource;
 import com.ewallet.model.Card;
 import com.ewallet.service.CardService;
 
+/**
+ * JDBC implementation of {@link CardService} backed by the "cards" table, which
+ * stores the bank cards linked to a wallet (number, holder, bank, expiry, CVV and
+ * status). Deletion methods return false instead of throwing when nothing matched.
+ */
 public class CardServiceImpl implements CardService {
 
 	DataSource dataSource;
@@ -20,6 +25,10 @@ public class CardServiceImpl implements CardService {
 		this.dataSource = dataSource;
 	}
 	
+	/**
+	 * Inserts a new card row into "cards" on behalf of a wallet.
+	 * @return true when the row was inserted.
+	 */
 	@Override
 	public boolean addCard(Card card)throws SQLException{
 		String query = "INSERT INTO cards (wallet_id, card_number, card_name, card_holder_name, bank_name, expire_date, cvv)"
@@ -42,6 +51,10 @@ public class CardServiceImpl implements CardService {
 		}
 	}
 	
+	/**
+	 * Selects every row of "cards" belonging to a wallet and maps each to a Card.
+	 * @return the wallet's cards, or an empty list when there are none.
+	 */
 	@Override
 	public List<Card> getAllCardsByWalletId(long walletId) {
 		String query = "Select * from cards where wallet_id = ?";
@@ -72,6 +85,10 @@ public class CardServiceImpl implements CardService {
 		}
 	}
 	
+	/**
+	 * Updates the status column of one "cards" row (e.g. active / blocked).
+	 * @return true when a row was updated.
+	 */
 	@Override
 	public boolean updateCardStatus(Long cardId, int status) {
 		String query = "update cards set status = ? where card_id = ?";
@@ -85,6 +102,11 @@ public class CardServiceImpl implements CardService {
 		}
 	}
 
+	/**
+	 * Deletes one "cards" row, scoped by both card id and owning wallet id so a caller
+	 * can only remove its own cards.
+	 * @return true when a row was deleted, false when nothing matched.
+	 */
 	@Override
 	public boolean deleteCard(long cardId, long walletId) {
 		String query = "Delete from cards Where card_id = ? AND wallet_id = ?";
@@ -99,6 +121,10 @@ public class CardServiceImpl implements CardService {
 		}
 	}
 
+	/**
+	 * Deletes every "cards" row of a wallet (used when the wallet is closed).
+	 * @return true when at least one row was deleted, false when there were none.
+	 */
 	@Override
 	public boolean deleteAllCardsByWalletId(Long walletId){	
 		String query = "Delete from cards Where wallet_id = ?";
@@ -111,6 +137,10 @@ public class CardServiceImpl implements CardService {
 			return false;
 		}	}
 
+	/**
+	 * Selects a single "cards" row by its primary key and maps it to a Card.
+	 * @return the card, or null when it does not exist.
+	 */
 	@Override
 	public Card getCardByCardId(long cardId) {
 		String query = "Select * from cards where card_id = ?";
@@ -139,6 +169,11 @@ public class CardServiceImpl implements CardService {
 		return null;
 	}
 
+	/**
+	 * Selects a "cards" row by owning wallet id and card number (used to verify that a
+	 * given card actually belongs to the wallet before it is used).
+	 * @return the card, or null when no such card exists.
+	 */
 	@Override
 	public Card getCardByWalletIdAndCardNumber(long walletId, String cardNumber) {
 		String query = "Select * from cards where wallet_id = ? AND card_number =?";

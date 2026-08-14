@@ -8,6 +8,16 @@
 <c:set var="activeMenu" value="withdraw"/>
 <%@ include file="WEB-INF/partials/head.jsp" %>
 <%@ include file="WEB-INF/partials/navbar.jsp" %>
+
+<%--
+  ATM WITHDRAW OTP PAGE (authenticated)
+  Purpose: generate a one-time code (OTP) for withdrawing cash from an ATM.
+  Access: logged-in users only.
+  Controller: posts to /E-Wallet/transactionCodeController?action=generateCode;
+  when the countdown expires, updateCodeStatus marks the code as used/expired.
+  Displays: info banner, generate form (amount + PIN), the generated code with
+  copy button + countdown timer, and an error state.
+--%>
 <%
 	boolean isDone = request.getAttribute("done") != null && !request.getAttribute("done").toString().isEmpty();
 	boolean hasError = request.getAttribute("error") != null && !request.getAttribute("error").toString().isEmpty();
@@ -21,6 +31,7 @@
     </c:set>
     <%@ include file="WEB-INF/partials/page-head.jsp" %>
 
+    <%-- Info banner: explains the OTP flow; only shown when there is no result yet. --%>
     <% if (!isDone && !hasError) { %>
     <div class="d-flex align-items-start gap-3 p-3 rounded-3 mb-4" style="background:var(--bg-soft)">
       <span class="flex-shrink-0 d-flex align-items-center justify-content-center rounded-circle" style="width:44px;height:44px;background:var(--primary-light);color:var(--primary)"><i class="bi bi-info-circle fs-5"></i></span>
@@ -31,6 +42,7 @@
     </div>
     <% } %>
 
+    <%-- Error state: localized message from the controller + button to try again. --%>
     <% if (hasError) { %>
     <div class="panel shadow-sm mb-4">
       <div class="panel-body">
@@ -51,6 +63,7 @@
     <% if (!isDone) { %>
     <div class="panel shadow-sm">
       <div class="panel-body">
+        <%-- Generate-code form: withdrawal amount + wallet PIN confirmation; posts to transactionCodeController?action=generateCode. --%>
         <form action="${appURL}transactionCodeController?action=generateCode" method="post" novalidate class="validates">
 
           <label class="form-label" for="otp-amount"><fmt:message key="withdraw.amount"/> (<fmt:message key="common.currency"/>)</label>
@@ -87,6 +100,7 @@
     </div>
     <% } %>
 
+    <%-- Success state: reveal the generated OTP code with copy button and countdown timer. --%>
     <% if (isDone) { %>
     <%
     	String otpCodeVal = request.getAttribute("transactionCodeVal") != null ? request.getAttribute("transactionCodeVal").toString() : "";
@@ -111,6 +125,7 @@
             <button type="button" class="btn btn-soft btn-sm" onclick="navigator.clipboard.writeText(document.getElementById('otpCode').textContent.trim()).then(function(){var b=event.target.closest('button');b.innerHTML='<i class=\'bi bi-check\'></i> Copied';setTimeout(function(){b.innerHTML='<i class=\'bi bi-clipboard\'></i> Copy';},1500)})">
               <i class="bi bi-clipboard"></i> <fmt:message key="common.copy"/>
             </button>
+            <!-- Countdown chip: at 0 seconds (600s), main.js posts to updateCodeStatus so the code expires. -->
             <span class="timer-chip" data-countdown="600" data-countdown-url="${appURL}transactionCodeController?action=updateCodeStatus&lang=${lang}&code=<%= encodedCode %>"><i class="bi bi-hourglass-split"></i> <fmt:message key="withdraw.code.expires"/> <span data-countdown-time></span></span>
           </div>
           <p class="text-muted small"><fmt:message key="common.amount"/>: <strong><%= request.getAttribute("amountVal") != null ? request.getAttribute("amountVal") : "—" %></strong></p>

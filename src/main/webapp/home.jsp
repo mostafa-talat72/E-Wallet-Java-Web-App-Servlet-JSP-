@@ -7,6 +7,16 @@
 <%@ include file="WEB-INF/partials/head.jsp" %>
 <%@ include file="WEB-INF/partials/navbar.jsp" %>
 
+<%--
+  DASHBOARD PAGE (authenticated)
+  Purpose: main landing page after login — balance overview and quick actions.
+  Access: logged-in users only (wallet + walletBalance read from the session).
+  Controllers: quick links go to send-money.jsp, cardController?action=getAllCards,
+  atmotp.jsp, cards.jsp and transactions.jsp.
+  Displays: greeting, total/available/held balance with show/hide toggle,
+  wallet phone and a quick-action grid.
+--%>
+
 <main class="main-content">
   <div class="content-wrap">
 
@@ -29,6 +39,7 @@
 
     <div class="row g-4">
       <div class="col-12">
+        <%-- Balance hero: total = available + held; includes a show/hide toggle button. --%>
         <div class="balance-hero">
           <div class="hero-body">
             <div class="hero-label">
@@ -41,6 +52,7 @@
                 </span>
                 <small class="fs-6 fw-bold opacity-75"> <fmt:message key="common.currency"/></small>
               </span>
+              <!-- Show/hide balance button: main.js toggles between plain and masked amounts. -->
               <button type="button" class="hide-btn" data-balance-toggle aria-label="toggle">
                 <i class="bi bi-eye-slash"></i>
               </button>
@@ -80,6 +92,7 @@
             <h5 class="panel-title"><i class="bi bi-lightning-charge-fill"></i> <fmt:message key="dash.quick"/></h5>
           </div>
           <div class="panel-body">
+            <%-- Quick actions: shortcuts to send money, add money, ATM withdraw, cards and transactions. --%>
             <div class="quick-grid">
               <a href="${appURL}send-money.jsp${qLang}" class="quick-item">
                 <span class="quick-icon tone-blue"><i class="bi bi-send"></i></span>

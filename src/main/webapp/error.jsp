@@ -6,6 +6,14 @@
 <c:set var="bodyClass" value="auth-body"/>
 <%@ include file="WEB-INF/partials/head.jsp" %>
 
+<%--
+  ERROR PAGE (public)
+  Purpose: global error page rendered by the container for uncaught exceptions
+  (declared with isErrorPage="true").
+  Access: public — no session required.
+  Displays: warning icon, localized error message and a button back to the dashboard.
+--%>
+
 <div class="w-100 d-flex align-items-center justify-content-center" style="min-height:100vh">
   <div class="text-center" style="max-width:440px">
     <div class="mb-4">

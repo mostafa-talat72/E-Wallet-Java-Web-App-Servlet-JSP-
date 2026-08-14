@@ -3,6 +3,16 @@
 <%@ taglib prefix="fmt" uri="http://java.sun.com/jsp/jstl/fmt" %>
 <%@ taglib prefix="fn" uri="http://java.sun.com/jsp/jstl/functions" %>
 <%@ include file="../WEB-INF/partials/lang.jsp" %>
+
+<%--
+  ATM MACHINE SIMULATOR PAGE (public)
+  Purpose: simulate an ATM terminal for card and e-wallet services.
+  Access: public — opened from the ATM map (getATMById) or directly.
+  Behavior: fully client-side (atm/atm.js) — screens, keypad, card/cash slots;
+  an optional "atm" request attribute provides this machine's name/location.
+  Displays: screen state machine (welcome -> services -> entries -> processing
+  -> result -> thanks), keypad, card slot and cash slot animations.
+--%>
 <!DOCTYPE html>
 <html lang="${lang}" dir="${dir}">
 <head>
@@ -18,6 +28,7 @@
 </head>
 <body>
 
+  <!-- Floating button toggles the simulator's language (wired in atm.js). -->
   <button class="lang-toggle" id="lang-btn" type="button">العربية</button>
 
   <div class="atm-machine">
@@ -31,6 +42,7 @@
       </c:if>
     </div>
 
+<%-- Screen area: a state machine of <div class="screen"> views toggled by atm.js. --%>
     <!-- ================= SCREEN ================= -->
     <div class="atm-screen">
       <div class="screen-inner" id="atm-screen">
@@ -199,6 +211,7 @@
       <span class="led" id="card-led2"></span>
     </div>
 
+<%-- Keypad: digits 0-9 plus CLEAR/BACK/CANCEL/ENTER; events are wired to the active screen in atm.js. --%>
     <!-- ================= KEYPAD ================= -->
     <div class="atm-keypad-wrap">
       <div class="keypad">

@@ -15,6 +15,16 @@
 <c:set var="activeMenu" value="transactions"/>
 <%@ include file="WEB-INF/partials/head.jsp" %>
 <%@ include file="WEB-INF/partials/navbar.jsp" %>
+
+<%--
+  TRANSACTIONS PAGE (authenticated)
+  Purpose: browse the wallet's transaction history.
+  Access: logged-in users only.
+  Controller: loads data from transactionController?action=allTtransaction
+  (redirects to it when the request attribute is missing).
+  Displays: filter pills (all/withdraw/deposit/transfer), searchable table
+  with in/out amounts and status badges, and client-side pagination.
+--%>
 <%
 
 	List<Transaction> transactions =(List<Transaction>) request.getAttribute("transactions");
@@ -37,6 +47,7 @@
     </c:set>
     <%@ include file="WEB-INF/partials/page-head.jsp" %>
 
+    <%-- Transaction list panel: filter pills (all/withdraw/deposit/transfer) + search field. --%>
     <div class="panel">
       <div class="panel-head flex-wrap gap-3">
         <div class="filter-pills" id="txFilterPills">
@@ -51,6 +62,7 @@
         </div>
       </div>
       <div class="table-responsive">
+        <%-- Transactions table: one row per transaction, rendered by the scriptlet below. --%>
         <table class="table align-middle" data-tx-list data-page-size="8">
           <thead>
             <tr>
@@ -63,6 +75,7 @@
               <th class="text-center"><fmt:message key="common.status"/></th>
             </tr>
           </thead>
+          <%-- Rows: direction icon (in/out), from/to phones, ref, date, signed amount and status badge. --%>
           <tbody>
             <%
             	if(transactions!=null){
@@ -124,6 +137,7 @@
             		}
             	}
 			%>
+            <%-- Empty-state row: shown by the client-side filter/search when nothing matches. --%>
             <tr class="empty-no-tx" style="display:none">
               <td colspan="6">
                 <div class="empty-state">
@@ -135,6 +149,7 @@
           </tbody>
         </table>
       </div>
+      <%-- Client-side pagination: 8 rows per page (data-page-size), prev/next + page numbers. --%>
       <div class="panel-foot d-flex justify-content-between align-items-center flex-wrap gap-2" data-tx-pager-wrap>
         <span class="small text-muted">
           <fmt:message key="tx.showing"/> <strong data-tx-range>0</strong> <fmt:message key="tx.of"/> <strong data-tx-total><%= transactions != null ? transactions.size() : 0 %></strong>

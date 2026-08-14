@@ -5,23 +5,39 @@ import java.sql.Date;
 import java.sql.Timestamp;
 import java.util.Objects;
 
+/**
+ * Maps to the {@code cards} table. Represents a bank card linked to a wallet;
+ * it is used to fund cash operations (e.g. ATM withdrawals). The card number
+ * and CVV are stored as text so they can be masked on the UI.
+ */
 public class Card {
 
+    // Identity fields
     private Long cardId;
     private Long walletId;
+
+    // Card details
     private String cardNumber;
     private String cardName;
     private String cardHolderName;
     private String bankName;
+
+    // Expiry and card security code
     private Date expireDate;
     private String cvv;
+
+    // Status and lifecycle fields
     private Integer status;
     private Timestamp createdAt;
 
     public Card() {
     }
 
-    // Insert Constructor
+    /**
+     * Creates a new card for the add-card flow (INSERT). The card is linked to
+     * its owner wallet via {@code walletId}; status and creation timestamp are
+     * set by the database.
+     */
     public Card(Long walletId, String cardNumber, String cardName,
                 String bankName, String cardHolderName, Date expireDate,
                 String cvv) {
@@ -34,7 +50,10 @@ public class Card {
         this.cvv = cvv;
     }
 
-    // Full Constructor
+    /**
+     * Full constructor used when a card row is read back from the database,
+     * including its status and creation timestamp.
+     */
     public Card(Long cardId, Long walletId, String cardNumber,
                 String cardName, String cardHolderName, String bankName,
                 Date expireDate, String cvv,

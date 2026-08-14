@@ -5,7 +5,16 @@ import java.util.Map;
 import java.sql.SQLException;
 import java.time.YearMonth;
 
+/**
+ * Form validation helpers for the add-card flow: card number, CVV and expiry
+ * date, plus translation of DB card constraints into user-facing error
+ * messages.
+ */
 public class CardValidator {
+	/**
+	 * Validates all fields of the add-card form and returns the field error
+	 * map.
+	 */
 	public static Map<String, String> validateForAddCard(String cardNumber, String cvv, String expMonth, String expYear){
 		Map<String, String> errors = new HashMap<>();
         checkCardNumber(cardNumber, errors);
@@ -14,10 +23,15 @@ public class CardValidator {
         return errors;
 	}
 	/*
+	 * DB constraints mirrored by the checks below (as declared in the schema):
 	 * CONSTRAINT CHECK_CARD_NUMBER_LENGTH CHECK (REGEXP_LIKE(card_number, '^[0-9]{16}$')),
 	 * CONSTRAINT CHECK_CVV_LENGTH CHECK (REGEXP_LIKE(cvv, '^[0-9]{3}$')),
 	 * CONSTRAINT UQ_CARD_NUMBER_WALLET UNIQUE(wallet_id,card_number)
 	 * */
+	/**
+	 * Translates a database integrity-constraint violation (SQL state 23000)
+	 * into a plain-English error message per constraint.
+	 */
 	public static Map<String, String> parseSqlException(SQLException e) {
 		Map<String, String> errors = new HashMap<>();
 		String sqlState = e.getSQLState();
@@ -34,6 +48,9 @@ public class CardValidator {
 		return errors;		
 	}
 	
+	/**
+	 * Card number must be exactly 16 digits.
+	 */
 	public static void checkCardNumber(String cardNumber, Map<String, String> errors) {
 		if(cardNumber == null || cardNumber.isEmpty() || cardNumber.trim().isEmpty()) {
 			errors.put("cardNumber", "Card Number is required.");
@@ -45,6 +62,9 @@ public class CardValidator {
 		}
 	}
 
+	/**
+	 * CVV must be exactly 3 digits.
+	 */
 	public static void checkCVV(String cvv, Map<String, String> errors) {
 		if(cvv == null || cvv.isEmpty() || cvv.trim().isEmpty()) {
 			errors.put("cvv", "CVV is required.");
@@ -56,6 +76,10 @@ public class CardValidator {
 		}
 	}
 	
+	/**
+	 * Expiry month and year must both be present and must point strictly after
+	 * the current month (a card expiring this month is already rejected).
+	 */
 	public static void checkExpirDate(String expMonth, String expYear, Map<String, String> errors) {
 		if(expMonth == null || expMonth.isEmpty() || expMonth.trim().isEmpty() ||
 				expYear == null	|| expYear.isEmpty() || expYear.trim().isEmpty()) {

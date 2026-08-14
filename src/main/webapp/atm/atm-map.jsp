@@ -7,6 +7,15 @@
 <%@ taglib prefix="fmt" uri="http://java.sun.com/jsp/jstl/fmt" %>
 <%@ taglib prefix="fn" uri="http://java.sun.com/jsp/jstl/functions" %>
 <%@ include file="../WEB-INF/partials/lang.jsp" %>
+
+<%--
+  ATM MAP PAGE (public)
+  Purpose: show all ATM machines on a map with positioned markers and a list.
+  Access: public — no login required.
+  Controller: loads ATMs via atmController?action=getAllATMs (redirects if missing);
+  markers/list items open the ATM simulator via atmController?action=getATMById.
+  Displays: map canvas with markers + legend, machine list, total machine count.
+--%>
 <!DOCTYPE html>
 <html lang="${lang}" dir="${dir}">
 <head>
@@ -105,6 +114,7 @@
   <div class="wrap">
     <div class="map-head">
       <div class="map-title"><span class="dot"></span><fmt:message key="atm.map.title"/></div>
+      <!-- Language toggle: flips this page between Arabic and English. -->
       <a class="lang-toggle" href="${appURL}atm/atm-map.jsp?lang=${lang == 'en' ? 'ar' : 'en'}">${lang == 'ar' ? 'English' : 'العربية'}</a>
     </div>
 
@@ -114,6 +124,7 @@
       </c:when>
       <c:otherwise>
 
+        <%-- Map canvas: markers are positioned by atm.mapX/mapY percentages; each marker opens the ATM simulator (getATMById). --%>
         <div class="map-canvas">
           <c:forEach var="atm" items="${atms}">
             <a class="atm-marker"
@@ -132,6 +143,7 @@
 
         <p class="hint"><fmt:message key="atm.map.hint"/></p>
 
+        <%-- Machine list: name + location cards, each linking to the ATM simulator. --%>
         <div class="atm-list">
           <c:forEach var="atm" items="${atms}">
             <a class="atm-card"

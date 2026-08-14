@@ -6,19 +6,23 @@
 
   <display-name>E-Wallet</display-name>
 
+  <!-- Landing page served for the application root URL. -->
   <welcome-file-list>
     <welcome-file>index.jsp</welcome-file>
   </welcome-file-list>
 
+  <!-- HTTP sessions expire after 30 minutes of inactivity. -->
   <session-config>
     <session-timeout>30</session-timeout>
   </session-config>
 
+  <!-- 404 Not Found: route to the shared error page. -->
   <error-page>
     <error-code>404</error-code>
     <location>/error.jsp</location>
   </error-page>
 
+  <!-- Any unhandled exception: route to the shared error page. -->
   <error-page>
     <exception-type>java.lang.Throwable</exception-type>
     <location>/error.jsp</location>

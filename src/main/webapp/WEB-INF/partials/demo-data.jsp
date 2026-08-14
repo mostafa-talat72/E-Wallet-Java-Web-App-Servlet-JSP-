@@ -1,8 +1,16 @@
+<%--
+  DEMO-DATA PARTIAL — mock/fallback content only.
+  When controllers leave request data empty (e.g. running the UI standalone),
+  this partial fabricates sample wallet, transactions and cards so pages still
+  render meaningful demo content. These are literal demo maps, NOT real
+  database records, and are only used for development/demo purposes.
+--%>
 <%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core" %>
 <c:if test="${empty wallet}">
   <c:set var="wallet" value="${ {'phone':'01012345678','nationalId':'29901010123456','available':12500.75,'held':450.00} }"/>
 </c:if>
 
+<%-- Sample transaction history used by the dashboard/transactions demo. --%>
 <c:if test="${empty transactions}">
   <c:set var="transactions" value="${ [
       {'type':'deposit','status':'success','amount':1500.00,'from':'Card •••• 0366','to':'Wallet','date':'2026-08-03 14:32','ref':'TX-882134'},
@@ -18,6 +26,7 @@
   ] }"/>
 </c:if>
 
+<%-- Sample saved cards used by the cards/add-money demo. --%>
 <c:if test="${empty cards}">
   <c:set var="cards" value="${ [
       {'number':'4532015112830366','name':'Ahmed Mohamed','bank':'Banque Misr','label':'Salary card','expire':'08/28','cvv':'123','status':1,'tone':'blue'},

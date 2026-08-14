@@ -11,6 +11,17 @@
 <c:set var="activeMenu" value="send"/>
 <%@ include file="WEB-INF/partials/head.jsp" %>
 <%@ include file="WEB-INF/partials/navbar.jsp" %>
+
+<%--
+  SEND MONEY PAGE (authenticated)
+  Purpose: transfer money from the wallet to another phone number.
+  Access: logged-in users only (available balance from sessionScope.walletBalance).
+  Controller: posts to /E-Wallet/transactionController?action=transfer.
+  Displays: 2-step wizard (recipient + amount, review + PIN), live fee
+  calculation and a success/error receipt after submission.
+--%>
+
+<%-- Collect server-side validation errors (recipient, amount, PIN) into variables that prefill the form. --%>
 <%
 		Map<String, String> err = (Map<String, String>) request.getAttribute("errors");
 		String recipientPhoneErr = "";
@@ -48,6 +59,7 @@
     </c:set>
     <%@ include file="WEB-INF/partials/page-head.jsp" %>
 
+    <%-- Transfer form: wraps the 2-step wizard and posts to transactionController?action=transfer. --%>
     <form id="sendMoneyForm" class="validates" action="${appURL}transactionController?action=transfer" method="post" novalidate>
     <div data-stepper>
       <div class="stepper mb-4">
@@ -61,7 +73,8 @@
         </div>
       </div>
 
-      <div class="panel step-panel">
+      <%-- Step 1: recipient phone, amount (with quick chips) and optional note; shows the available balance. --%>
+        <div class="panel step-panel">
         <div class="panel-body">
             <div class="mb-4">
               <label class="form-label" for="recipient"><fmt:message key="send.recipient"/></label>
@@ -113,7 +126,8 @@
         </div>
       </div>
 
-      <div class="panel step-panel d-none">
+      <%-- Step 2: receipt preview with live fee calculation, then PIN confirmation. --%>
+        <div class="panel step-panel d-none">
         <div class="panel-head">
           <h5 class="panel-title"><i class="bi bi-receipt"></i> <fmt:message key="send.preview.title"/></h5>
         </div>
@@ -129,6 +143,7 @@
             </div>
             <div class="receipt-row">
               <span><fmt:message key="send.fees"/></span>
+              <!-- Fee: 0.1% of the amount, computed live by main.js; the total is written into #preview-total. -->
               <strong data-fee-calc data-fee-source="#amount" data-fee-rate="0.001" data-fee-cur="<fmt:message key="common.currency"/>" data-fee-target="#preview-total">0.00 <fmt:message key="common.currency"/></strong>
             </div>
             <div class="receipt-row">
@@ -165,6 +180,7 @@
     </div>
     </form>
 
+    <%-- Result panel (hidden by default): success or error summary with the full transfer receipt. --%>
     <div class="panel shadow-sm d-none" data-done>
       <div class="panel-body">
         <div class="success-wrap">
@@ -231,3 +247,5 @@
 %>
 
 <%@ include file="WEB-INF/partials/footer.jsp" %>
+
+<%-- On done/error flags, hide the wizard and reveal the result panel on load. --%>

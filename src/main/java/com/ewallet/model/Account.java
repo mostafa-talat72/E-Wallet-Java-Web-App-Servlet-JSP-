@@ -2,8 +2,14 @@ package com.ewallet.model;
 
 import java.util.Objects;
 
+/**
+ * Maps to the {@code accounts} table. A polymorphic account: the
+ * {@code accountTypeId} discriminates the kind of account (e.g. wallet or ATM)
+ * and {@code referenceId} points to the owning entity's primary key.
+ */
 public class Account {
 
+    // Identity / classification fields
     private Long accountId;
     private int accountTypeId;
     private Long referenceId;
@@ -12,13 +18,19 @@ public class Account {
     public Account() {
     }
 
-    // Insert Constructor
+    /**
+     * Creates a new account row (INSERT): the account type and the referenced
+     * entity (wallet or ATM id) are supplied; status defaults in the database.
+     */
     public Account(int accountTypeId, Long referenceId) {
         this.accountTypeId = accountTypeId;
         this.referenceId = referenceId;
     }
 
-    // Full Constructor
+    /**
+     * Full constructor used when an account row is read back from the
+     * database, including its status.
+     */
     public Account(Long accountId, int accountTypeId,
                    Long referenceId, Integer status) {
         this.accountId = accountId;

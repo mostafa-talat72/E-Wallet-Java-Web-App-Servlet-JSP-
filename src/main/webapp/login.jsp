@@ -8,8 +8,18 @@
 <c:set var="bodyClass" value="auth-body"/>
 <%@ include file="WEB-INF/partials/head.jsp" %>
 
+<%--
+  LOGIN PAGE (public)
+  Purpose: authenticate an existing user with phone number + PIN.
+  Access: public — no session required.
+  Controller: posts to /E-Wallet/walletController?action=login.
+  Displays: brand/feature panel, login form, server-side validation errors,
+  remember-me and forgot-PIN links, demo hint, language toggle (?lang=ar|en).
+--%>
+
 <div class="auth-wrap">
-  <div class="auth-brand">
+  <%-- Brand panel: app logo, marketing feature list and footer, shown beside the form. --%>
+    <div class="auth-brand">
     <div class="auth-brand-top">
       <span class="brand-logo"><i class="bi bi-wallet2"></i></span>
       <span>E-<span>Wallet</span></span>
@@ -50,6 +60,7 @@
       </div>
       <div class="d-flex justify-content-between align-items-center mb-4">
         <h1 class="auth-title"><fmt:message key="auth.loginTitle"/></h1>
+        <!-- Language toggle: reloads the current page with ?lang=ar|en. -->
         <div class="lang-switch">
           <a href="login.jsp?lang=ar" class="${lang == 'ar' ? 'active' : ''}">عربي</a>
           <a href="login.jsp?lang=en" class="${lang == 'en' ? 'active' : ''}">EN</a>
@@ -57,6 +68,7 @@
       </div>
       <p class="auth-subtitle"><fmt:message key="auth.loginSubtitle"/></p>
 
+      <%-- Login form: posts phone + PIN to WalletController (action=login). --%>
       <form action="/E-Wallet/walletController?action=login" method="post" novalidate>
         <% 
         	
@@ -67,6 +79,7 @@
 	            String errorMessage = entry.getValue();
 	        
         %>
+          <%-- Server-side errors: each entry in the "errors" map renders a localized message in this alert box. --%>
           <div class="form-alert" role="alert">
 	          <i class="bi bi-exclamation-circle-fill"></i>
 	          <span><fmt:message key="<%= errorMessage %>"/></span>

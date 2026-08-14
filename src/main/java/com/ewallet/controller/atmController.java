@@ -36,8 +36,20 @@ import com.ewallet.util.LanguageUtil;
 import com.ewallet.util.TransactionUtil;
 
 /**
- * http://localhost:8080/E-Wallet/atmController?action=getAllATMs
- * http://localhost:8080/E-Wallet/atmController?action=execute&atmId=1&phone=0111...&code=123456&type=deposit
+ * Controller exposing ATM information to the user-facing ATM pages.
+ * Provides the list of registered ATMs for the map view and the
+ * details of a single ATM for the ATM machine page.
+ *
+ * URL mapping: /atmController
+ *
+ * Exposed actions (via the "action" request parameter):
+ *  - getAllATMs : loads all ATMs and forwards to the ATM map page
+ *  - getATMById : loads a single ATM by id and forwards to the ATM machine page
+ *  - (any other/missing): redirects to the error page
+ *
+ * Examples:
+ *  http://localhost:8080/E-Wallet/atmController?action=getAllATMs
+ *  http://localhost:8080/E-Wallet/atmController?action=getATMById&atmId=1
  */
 @WebServlet("/atmController")
 public class atmController extends HttpServlet {
@@ -49,6 +61,11 @@ public class atmController extends HttpServlet {
 	private TransactionCodeService codeService;
 	private TransactionService transactionService;
 
+	/**
+	 * Servlet initialization hook. Constructs the services used by this
+	 * controller: the ATM service for ATM lookups, plus the transaction
+	 * code and transaction services kept available for ATM operations.
+	 */
 	@Override
 	public void init() throws ServletException {
 		atmService = new ATMServiceImpl(dataSource);
@@ -56,6 +73,16 @@ public class atmController extends HttpServlet {
 		transactionService = new TransactionServiceImpl(dataSource);
 	}
 
+	/**
+	 * GET entry point of the controller. Reads the "action" request parameter
+	 * and dispatches to the matching action method. Also handles POST
+	 * requests because doPost delegates to doGet.
+	 *
+	 * @param request  the HTTP request
+	 * @param response the HTTP response
+	 * @throws ServletException if a forward/redirect fails
+	 * @throws IOException      if the response cannot be written
+	 */
 	protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
 		String action = request.getParameter("action");
 		if (action == null)
@@ -74,10 +101,18 @@ public class atmController extends HttpServlet {
 		}
 	}
 
+	/**
+	 * POST entry point of the controller. Delegates all POST requests to
+	 * doGet so that both HTTP verbs share the same action-dispatch logic.
+	 */
 	protected void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
 		doGet(request, response);
 	}
 
+	/**
+	 * Handles the "getAllATMs" action: loads all ATM machines from the
+	 * service and forwards to the ATM map page for display.
+	 */
 	private void getAllATMs(HttpServletRequest request, HttpServletResponse response) {
 		List<ATM> atms = atmService.getAllATMs();
 		try {
@@ -88,6 +123,11 @@ public class atmController extends HttpServlet {
 		}
 	}
 
+	/**
+	 * Handles the "getATMById" action: loads a single ATM by its id and
+	 * forwards to the ATM machine page, where deposits and withdrawals
+	 * are performed.
+	 */
 	private void getATMById(HttpServletRequest request, HttpServletResponse response) throws IOException {
 		long atmId = Long.parseLong(request.getParameter("atmId"));
 		ATM atm = atmService.getATMById(atmId);

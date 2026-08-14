@@ -1,3 +1,15 @@
+<%--
+  I18N PARTIAL — must be included FIRST on every page.
+  - Applies no-cache response headers so logged-out content is never served stale.
+  - Resolves the locale: ?lang=en|ar request param, persisted to the session,
+    defaulting to Arabic (ar).
+  - Sets shared variables used across all pages:
+      lang   -> current locale code
+      dir    -> 'ltr' | 'rtl' (drives the <html dir> attribute)
+      appURL -> context path with trailing slash
+      qLang  -> '?lang=<lang>' query suffix for same-page links
+  - Configures the JSTL <fmt> locale and the ewallet.i18n.messages bundle.
+--%>
 <%@ page contentType="text/html; charset=UTF-8" pageEncoding="UTF-8" %>
 <%@ page import="java.util.Date" %>
 <%
@@ -7,6 +19,7 @@
 %>
 <%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core" %>
 <%@ taglib prefix="fmt" uri="http://java.sun.com/jsp/jstl/fmt" %>
+<%-- Resolve the language: an explicit ?lang param wins; otherwise reuse the session value (default: Arabic). --%>
 <c:choose>
   <c:when test="${not empty param.lang}">
     <c:set var="lang" value="${param.lang == 'en' ? 'en' : 'ar'}" scope="session"/>

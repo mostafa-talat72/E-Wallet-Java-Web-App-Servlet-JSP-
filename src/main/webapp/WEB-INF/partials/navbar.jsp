@@ -4,6 +4,13 @@
 <%@ taglib prefix="fn" uri="http://java.sun.com/jsp/jstl/functions" %>
 <c:set var="pageName" value="${fn:replace(fn:substringAfter(pageContext.request.servletPath, '/'), '.jsp', '')}"/>
 <c:if test="${empty pageName}"><c:set var="pageName" value="home"/></c:if>
+<%--
+  NAVBAR PARTIAL (authenticated pages)
+  Derives pageName from the current servlet path so the language toggle
+  reloads the same page, and highlights the active menu item via ${activeMenu}.
+  Includes: sidebar (brand, main nav, account links, logout), mobile overlay,
+  and topbar (menu toggle, search, language switch, user dropdown).
+--%>
 <aside class="sidebar" id="sidebar">
   <div class="sidebar-brand">
     <a href="${appURL}home.jsp${qLang}" class="brand-link">
@@ -11,7 +18,8 @@
       <span class="brand-name">E-<span class="brand-accent">Wallet</span></span>
     </a>
   </div>
-  <nav class="sidebar-nav">
+  <%-- Main navigation: menu items highlight when activeMenu matches; some entries load data via their controllers first. --%>
+    <nav class="sidebar-nav">
     <div class="nav-section-label"><fmt:message key="nav.main"/></div>
     <a href="/E-Wallet/walletController?action=login" class="nav-link ${activeMenu == 'home' ? 'active' : ''}">
       <i class="bi bi-grid-1x2-fill"></i><span><fmt:message key="nav.dashboard"/></span>
@@ -33,6 +41,7 @@
       <i class="bi bi-arrow-left-right"></i><span><fmt:message key="nav.transactions"/></span>
     </a>
   </nav>
+  <%-- Account area: profile link and logout (posts to walletController?action=logout). --%>
   <div class="sidebar-footer">
     <a href="${appURL}profile.jsp${qLang}" class="nav-link ${activeMenu == 'profile' ? 'active' : ''}">
       <i class="bi bi-person-fill"></i><span><fmt:message key="nav.profile"/></span>
@@ -44,6 +53,7 @@
 </aside>
 <div class="sidebar-overlay" id="sidebarOverlay"></div>
 
+<%-- Topbar: sidebar toggle, desktop search, language switch and user dropdown menu. --%>
 <header class="topbar">
   <div class="topbar-start">
     <button type="button" class="btn-icon topbar-toggle" id="sidebarToggle" aria-label="Toggle menu">
@@ -55,6 +65,7 @@
     </div>
   </div>
   <div class="topbar-end">
+    <!-- Language toggle: rebuilds the current page name with ?lang=ar|en. -->
     <div class="lang-switch">
       <a href="${appURL}${pageName}.jsp?lang=ar" class="${lang == 'ar' ? 'active' : ''}">عربي</a>
       <a href="${appURL}${pageName}.jsp?lang=en" class="${lang == 'en' ? 'active' : ''}">EN</a>

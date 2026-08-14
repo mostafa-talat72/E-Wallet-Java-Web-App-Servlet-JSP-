@@ -1,3 +1,11 @@
+<%--
+  HEAD PARTIAL
+  Renders the document <head> for all main pages:
+  - <title> from ${pageTitle} + app name, plus favicon
+  - Bootstrap RTL/LTR stylesheet chosen by ${dir}
+  - Bootstrap Icons and the app's custom style.css
+  - window.APPMSG: localized message keys consumed by main.js
+--%>
 <%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core" %>
 <%@ taglib prefix="fmt" uri="http://java.sun.com/jsp/jstl/fmt" %>
 <!DOCTYPE html>
@@ -17,6 +25,7 @@
 </c:choose>
 <link rel="stylesheet" href="${appURL}assets/vendor/icons/bootstrap-icons.min.css">
 <link rel="stylesheet" href="${appURL}assets/css/style.css">
+<%-- Localized client-side messages: main.js reads these keys for toasts, confirmations and badges. --%>
 <script>
 window.APPMSG = {
   marked: '<fmt:message key="js.marked"/>',

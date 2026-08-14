@@ -1,6 +1,36 @@
+// ---------------------------------------------------------------------------
+// ATM machine screen flow ("ATM mode" of the E-Wallet web app).
+//
+// The ATM is a single-page state machine: each state maps to one screen
+// element (scr-<id>) and show() is the single place where screens are switched.
+//
+//   idle       - attract screen (press ENTER to begin)
+//   unavail    - card services unavailable (placeholder branch)
+//   lang       - language selection, persisted in localStorage
+//   ewallet    - wallet services entry point
+//   choose     - transaction type picker (deposit / withdraw)
+//   phone      - collect the 11-digit wallet phone number
+//   code       - collect the 9-digit OTP code
+//   amount     - collect the amount (must be a multiple of 100)
+//   processing - animated wait while the backend is called
+//   result     - success / failure outcome with the ATM reference
+//   thanks     - session ended, take your card
+//
+// The on-screen numeric keypad drives pressDigit / pressClear / pressEnter /
+// pressCancel and mirrors the physical keyboard (digits, Enter, Backspace,
+// Escape). Validation happens inside pressEnter per screen (phone format,
+// 9-digit code, amount rules). At the end of the flow runProcessing() submits
+// the transaction with fetch() to transactionController?action=atmExecute and
+// maps server error codes (e.g. err.atm.codeNotFound) onto the errAtm* keys of
+// the I18N dictionary via errKey().
+//
+// All visible text is rendered through the T() translation lookup, which
+// switches between the EN and AR dictionaries and toggles the dir attribute.
+// ---------------------------------------------------------------------------
 (function () {
   "use strict";
 
+  // English and Arabic dictionaries for every label shown on the ATM.
   var I18N = {
     en: {
       langLabel: "العربية",
@@ -146,15 +176,19 @@
     }
   };
 
+  // Active language, restored from localStorage on load (default: "en").
   var lang = (function () {
     var saved;
     try { saved = localStorage.getItem("atm.lang"); } catch (e) { saved = null; }
     return saved === "en" || saved === "ar" ? saved : "en";
   })();
 
+  // Translation lookup with EN fallback; unknown keys render as themselves.
   var T = function (k) { return (I18N[lang] && I18N[lang][k]) || I18N.en[k] || k; };
 
   var $ = function (id) { return document.getElementById(id); };
+  // Collect every screen element (scr-idle, scr-choose, ...) into one map so
+  // show() can toggle them all in a single pass.
   var screens = {};
   ["idle", "unavail", "lang", "ewallet", "choose", "phone", "code", "amount", "processing", "result", "thanks"].forEach(function (n) {
     screens[n] = $("scr-" + n);
@@ -165,22 +199,34 @@
   var led2 = $("cash-led");
   var cashVis = $("cash-vis");
 
+  // Shared mutable state for the whole flow: current screen, the entry typed
+  // on the keypad, the chosen transaction type, last outcome and reference,
+  // the processing-line interval timer, and the collected phone / code.
   var state = { name: "idle", entry: "", tx: null, ok: true, amount: 0, timer: null, phone: "", code: "" };
+  // URL parameters allow opening the ATM in a preset state, e.g. with the
+  // transaction type pre-selected (?tx=withdraw) or bound to a specific machine.
   var qp = (typeof URLSearchParams !== "undefined") ? new URLSearchParams(location.search) : null;
   state.presetTx = qp && (qp.get("tx") === "deposit" || qp.get("tx") === "withdraw") ? qp.get("tx") : null;
   state.atmId = qp && qp.get("atmId") ? qp.get("atmId") : "1";
 
+  // Converts a server error code into the matching dictionary key so the ATM
+  // can show a localized message. E.g. "err.atm.codeNotFound" becomes
+  // "errAtmCodeNotFound", which exists in both the EN and AR dictionaries.
   function errKey(k) {
     if (!k) return null;
     var tail = k.split(".").pop();
     return "errAtm" + tail.charAt(0).toUpperCase() + tail.slice(1);
   }
 
+  // Formats a number with thousands separators, e.g. 12000 -> "12,000".
   function fmtNum(n) {
     return n.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
   }
 
   /* ---------- screen switching ---------- */
+  // Central screen switch: cancels any running timer, toggles the target
+  // screen's "active" class, updates the card / cash LEDs and the cash-slot
+  // state, hides the card on the idle screen, and scrolls back to the top.
   function show(name) {
     if (state.timer) { clearInterval(state.timer); state.timer = null; }
     state.name = name;
@@ -198,8 +244,11 @@
     window.scrollTo({ top: 0, behavior: "smooth" });
   }
 
+  // Sets the text content of an element when it exists.
   function setText(id, txt) { var e = $(id); if (e) e.textContent = txt; }
 
+  // Maximum number of digits accepted by the current entry screen
+  // (phone: 11, code: 9, amount: 7).
   function entryMax() {
     if (state.name === "phone") return 11;
     if (state.name === "code") return 9;
@@ -207,6 +256,8 @@
     return 0;
   }
 
+  // Redraws the keypad entry line: the amount is formatted with the currency
+  // label, and for phone / code a row of dots marks the digits typed so far.
   function renderEntry() {
     var max = entryMax();
     if (max === 0) return;
@@ -231,6 +282,8 @@
   }
 
   /* ---------- result screen ---------- */
+  // Fills the result screen: success shows a checkmark with the amount and ATM
+  // reference, failure shows a cross with the localized reason.
   function renderResult() {
     var icon = $("res-icon");
     icon.className = "result-icon " + (state.ok ? "ok" : "bad");
@@ -248,12 +301,14 @@
   }
 
   /* ---------- flow ---------- */
+  // Switches the active language, persists it and re-renders every label.
   function setLang(l) {
     lang = l;
     try { localStorage.setItem("atm.lang", lang); } catch (e) {}
     applyLang();
   }
 
+  // Starts a transaction of the given type and moves to the phone screen.
   function chooseTx(tx) {
     state.tx = tx;
     state.entry = "";
@@ -261,6 +316,8 @@
     renderEntry();
   }
 
+  // Aborts the flow with a failure: stores the reason and shows the result
+  // screen in its error state.
   function failGate(reason) {
     state.ok = false;
     state.failReason = reason;
@@ -268,6 +325,8 @@
     renderResult();
   }
 
+  // Plays the rotating "Processing..." lines for ~2.6 seconds, then executes
+  // the transaction and lands on the result screen.
   function runProcessing() {
     show("processing");
     var lines = [T("proc1"), T("proc2"), T("proc3")];
@@ -279,6 +338,8 @@
     }, 700);
     setTimeout(function () {
       if (state.timer) { clearInterval(state.timer); state.timer = null; }
+      // Execute the transaction against the backend; the short delay before the
+      // call lets the processing animation read as a real machine sequence.
       var url = "/E-Wallet/transactionController?action=atmExecute"
         + "&atmId=" + encodeURIComponent(state.atmId)
         + "&phone=" + encodeURIComponent(state.phone)
@@ -290,10 +351,14 @@
         .then(function (data) {
           if (data && data.ok) {
             state.ok = true;
+            // The backend may adjust the amount; show its final value and the
+            // ATM reference on the result screen.
             state.amount = data.amount;
             state.ref = data.ref;
           } else {
             state.ok = false;
+            // Map the server error code (e.g. err.atm.codeNotFound) to its
+            // dictionary key so the user sees a localized readable message.
             state.failReason = T(errKey(data && data.error)) || (data && data.error) || T("errAtmFailed");
           }
           show("result");
@@ -308,6 +373,9 @@
     }, 2600);
   }
 
+  // ENTER key / OK button: advances the flow, validating the current screen's
+  // input first. The idle screen boots the machine, each entry screen captures
+  // its field and moves on, and the code screen launches the transaction.
   function pressEnter() {
     if (state.name === "idle") { show("lang"); return; }
     if (state.name === "unavail") { show("idle"); return; }
@@ -338,6 +406,7 @@
     }
   }
 
+  // Appends a digit to the current entry, up to the screen's maximum length.
   function pressDigit(d) {
     if (state.name !== "phone" && state.name !== "code" && state.name !== "amount") return;
     var max = entryMax();
@@ -346,12 +415,15 @@
     renderEntry();
   }
 
+  // Clears the current entry (BACKSPACE / CLEAR key).
   function pressClear() {
     if (state.name !== "phone" && state.name !== "code" && state.name !== "amount") return;
     state.entry = "";
     renderEntry();
   }
 
+  // CANCEL / BACK key: walks one screen backwards through the flow (or resets
+  // to the transaction chooser / idle screen, depending on where the user is).
   function pressCancel() {
     if (state.name === "processing") return;
     if (state.name === "idle" || state.name === "thanks" || state.name === "unavail" || state.name === "lang") { show("idle"); return; }
@@ -363,6 +435,8 @@
     if (state.name === "result") { resetSession(); return; }
   }
 
+  // Clears all collected data and returns to the transaction chooser so a new
+  // transaction can start immediately.
   function resetSession() {
     state.entry = "";
     state.phone = "";
@@ -372,12 +446,16 @@
     show("choose");
   }
 
+  // Ends the session and shows the thank-you screen ("take your card").
   function endSession() {
     state.entry = "";
     show("thanks");
   }
 
   /* ---------- language ---------- */
+  // Applies the current language everywhere: sets the document direction and
+  // language attributes, fills every translatable element, and re-renders the
+  // dynamic entry / result areas if they are on screen.
   function applyLang() {
     document.documentElement.setAttribute("dir", lang === "ar" ? "rtl" : "ltr");
     document.documentElement.setAttribute("lang", lang);
@@ -434,6 +512,8 @@
   }
 
   /* ---------- wiring ---------- */
+  // Screen buttons and the on-screen keypad are wired to the flow functions
+  // above; the keyboard listener mirrors them for a physical keypad.
   $("lang-btn").addEventListener("click", function () {
     setLang(lang === "ar" ? "en" : "ar");
   });
@@ -473,6 +553,7 @@
   });
 
   /* ---------- init ---------- */
+  // Boot the machine: render in the saved language and start on the idle screen.
   applyLang();
   show("idle");
 })();

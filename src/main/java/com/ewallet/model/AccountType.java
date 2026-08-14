@@ -3,20 +3,31 @@ package com.ewallet.model;
 
 import java.util.Objects;
 
+/**
+ * Maps to the {@code account_types} table. Lookup entity that classifies
+ * accounts into kinds (e.g. wallet account, ATM account); its id is stored on
+ * each {@link Account} row as the type discriminator.
+ */
 public class AccountType {
 
+    // Lookup fields
     private Long accountTypeId;
     private String typeName;
 
     public AccountType() {
     }
 
-    // Insert Constructor
+    /**
+     * Creates a new account type (INSERT) from its display name.
+     */
     public AccountType(String typeName) {
         this.typeName = typeName;
     }
 
-    // Full Constructor
+    /**
+     * Full constructor used when an account type row is read back from the
+     * database.
+     */
     public AccountType(Long accountTypeId, String typeName) {
         this.accountTypeId = accountTypeId;
         this.typeName = typeName;

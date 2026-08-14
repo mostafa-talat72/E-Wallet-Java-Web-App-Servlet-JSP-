@@ -4,14 +4,27 @@ import java.math.BigDecimal;
 import java.sql.Timestamp;
 import java.util.Objects;
 
+/**
+ * Maps to the {@code transaction_codes} table. Stores one-time passcodes (OTP)
+ * issued to a wallet owner to authorize a transaction for a given amount. A
+ * code is single-use, expires after {@code expiresAt} and becomes permanently
+ * invalid after a maximum number of {@code attempts}.
+ */
 public class TransactionCode {
 
+    // Identity and ownership
     private Long codeId;
     private Long walletId;
+
+    // OTP payload
     private String code;
     private BigDecimal amount;
+
+    // Validity window
     private Timestamp createdAt;
     private Timestamp expiresAt;
+
+    // Usage state
     private Integer attempts;
     private Integer isUsed;
     private Integer isExpire;
@@ -20,7 +33,10 @@ public class TransactionCode {
     public TransactionCode() {
     }
 
-    // Insert Constructor
+    /**
+     * Creates a new OTP code (INSERT) for a wallet and the amount it
+     * authorizes; expiry, attempts and usage flags are set by the database.
+     */
     public TransactionCode(Long walletId, String code,
                            BigDecimal amount) {
         this.walletId = walletId;
@@ -28,7 +44,10 @@ public class TransactionCode {
         this.amount = amount;
     }
 
-    // Full Constructor
+    /**
+     * Full constructor used when a code row is read back from the database,
+     * including its validity window and usage state.
+     */
     public TransactionCode(Long codeId, Long walletId,
                            String code, BigDecimal amount,
                            Timestamp createdAt,

@@ -14,6 +14,16 @@
 <%@ include file="WEB-INF/partials/demo-data.jsp" %>
 <%@ include file="WEB-INF/partials/head.jsp" %>
 <%@ include file="WEB-INF/partials/navbar.jsp" %>
+
+<%--
+  ADD MONEY PAGE (authenticated)
+  Purpose: top up the wallet balance using a saved bank card.
+  Access: logged-in users only; saved cards are loaded via cardController.
+  Controller: posts to /E-Wallet/transactionController?action=addMoney; when no
+  cards exist yet the page redirects to cardController?action=getAllCards.
+  Displays: 3-step wizard (choose card, amount, confirm + PIN) and a
+  success/error receipt after submission.
+--%>
 <%
 	List<Card> cards = (ArrayList<Card>) request.getAttribute("cards");
 	if (cards == null) {
@@ -29,7 +39,9 @@
     </c:set>
     <%@ include file="WEB-INF/partials/page-head.jsp" %>
 
+    <%-- Add-money form: wraps the 3-step wizard and posts to transactionController?action=addMoney. --%>
     <form id="addMoneyForm" class="validates" action="${appURL}transactionController?action=addMoney" method="post" novalidate>
+    <%-- 3-step wizard (stepper): pick card, enter amount, confirm with PIN. --%>
     <div data-stepper>
       <div class="stepper mb-4">
         <div class="step active" data-step-dot>
@@ -46,7 +58,8 @@
         </div>
       </div>
 
-      <div class="panel step-panel">
+      <%-- Step 1: choose a saved (non-expired) card; the picker writes card details into hidden fields. --%>
+        <div class="panel step-panel">
         <div class="panel-body">
             <div class="mb-4">
               <label class="form-label"><fmt:message key="add.card.saved"/></label>
@@ -81,6 +94,7 @@
                           <span class="card-brand"><i class="bi bi-wallet2"></i><%= card.getBankName() == null? "" : card.getBankName() %></span>
                           <span class="badge badge-white"><%= card.getCardName() == null? "" : card.getCardName() %></span>
                         </div>
+                        <!-- Only the last 4 digits are rendered; the full number is stored in the data-number attribute. -->
                         <div class="card-number" dir="ltr">•••• •••• •••• <%= card.getCardNumber().substring(12) %></div>
                         <div class="card-bottom">
                           <div class="card-holder">
@@ -126,6 +140,7 @@
       <div class="panel step-panel d-none">
         <div class="panel-body">
             <div class="mb-4">
+              <%-- Step 2: enter the amount to add, with quick-amount chips. --%>
               <label class="form-label" for="amount"><fmt:message key="add.amount.title"/> (<fmt:message key="common.currency"/>)</label>
               <div class="amount-input">
                 <span class="currency-sign"><fmt:message key="common.currency"/></span>
@@ -160,6 +175,7 @@
             <div class="receipt-row"><span><fmt:message key="cards.holder"/></span><strong id="ok-holder" data-fill="#add-holder">—</strong></div>
             <div class="receipt-row"><span><fmt:message key="common.amount"/></span><strong class="amount-selected" id="ok-amount" data-fill="#amount">—</strong></div>
           </div>
+          <%-- Step 3: review the receipt (card + amount), then confirm with the wallet PIN. --%>
           <div class="mb-4 mt-4 text-center">
             <label class="form-label" for="pin"><fmt:message key="add.pin.title"/></label>
             <p class="text-muted mb-3" style="font-size:.9rem"><fmt:message key="add.pin.desc"/></p>
@@ -186,6 +202,7 @@
     </div>
     </form>
 
+    <%-- Result panel (hidden by default): success or error receipt shown after submission. --%>
     <div class="panel shadow-sm d-none" data-done>
       <div class="panel-body">
         <div class="success-wrap">
@@ -232,6 +249,8 @@
 
 
 <%@ include file="WEB-INF/partials/footer.jsp" %>
+
+<%-- If the controller set a done/error flag, hide the wizard and reveal the result panel on load. --%>
 
 <%
 	String doneFlag = (String) request.getAttribute("done");

@@ -16,6 +16,15 @@
 <%@ include file="WEB-INF/partials/head.jsp" %>
 <%@ include file="WEB-INF/partials/navbar.jsp" %>
 
+<%--
+  CARDS PAGE (authenticated)
+  Purpose: manage saved bank cards — list, activate/deactivate, add and delete.
+  Access: logged-in users only; the card list is loaded via cardController.
+  Controllers: updateCardStatus, addCard, deleteCard.
+  Displays: card grid (masked numbers), status switches, add-card modal and
+  delete-card confirmation modal.
+--%>
+
 <%
 	List<Card> cards = (ArrayList<Card>) request.getAttribute("cards");
 %>
@@ -30,6 +39,7 @@
     </c:set>
     <%@ include file="WEB-INF/partials/page-head.jsp" %>
 
+    <%-- Saved cards grid: masked number, bank, holder, expiry, status switch and delete button per card. --%>
     <div class="row g-4" id="cards-grid">
      <%
      	if(cards != null && !cards.isEmpty()){
@@ -42,7 +52,8 @@
 	              <span class="card-brand"><i class="bi bi-wallet2"></i> <%= card.getBankName() == null? "" : card.getBankName()  %></span>
 	              <span class="badge badge-white"><%= card.getCardName() == null? "" : card.getCardName() %></span>
 	            </div>
-	            <div class="card-number"><%= card.getCardNumber().substring(0,4) %> •••• •••• <%= card.getCardNumber().substring(12) %></div>
+	            <!-- Only the first and last 4 digits are shown; the middle is masked. -->
+            <div class="card-number"><%= card.getCardNumber().substring(0,4) %> •••• •••• <%= card.getCardNumber().substring(12) %></div>
 	            <div class="card-bottom">
 	              <div class="card-holder">
 	                <small><fmt:message key="cards.holder"/></small>
@@ -125,6 +136,7 @@
 		    }
 		}
 	%>
+    <%-- Add-card modal: the scriptlet above restored last-submitted values and per-field errors. --%>
     <div class="modal fade" id="addCardModal" tabindex="-1" aria-hidden="true">
       <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content" style="border-radius:18px;border:0;box-shadow:var(--shadow)">
@@ -133,6 +145,7 @@
             <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
           </div>
           <div class="modal-body">
+            <%-- Add-card form: 4-part card number, label, holder, bank, expiry (MM/YY) and CVV; posts to cardController?action=addCard. --%>
             <form id="card-add-form" action="/E-Wallet/cardController?action=addCard" method="post" class="validates" novalidate>
                <% 
 		          	if(!addCardErr.isEmpty()){
@@ -229,6 +242,7 @@
       </div>
     </div>
 
+  <%-- Delete-card modal: shows a summary of the card before the user confirms deletion. --%>
   <div class="modal fade" id="deleteCardModal" tabindex="-1" aria-hidden="true">
       <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content" style="border-radius:18px;border:0;box-shadow:var(--shadow)">
@@ -237,6 +251,7 @@
             <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
           </div>
           <div class="modal-body">
+            <%-- Confirmation posts the cardId to cardController?action=deleteCard. --%>
             <form id="card-delete-form" action="/E-Wallet/cardController?action=deleteCard" method="post">
               <input type="hidden" name="cardId" id="delCardId">
               <div class="receipt mb-3">
@@ -278,6 +293,8 @@
 </main>
 
 <%@ include file="WEB-INF/partials/footer.jsp" %>
+
+<%-- Re-open the add-card modal when a previous submission contained validation errors. --%>
 
 <%
     

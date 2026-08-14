@@ -12,11 +12,23 @@
 <%@ include file="WEB-INF/partials/head.jsp" %>
 <%@ include file="WEB-INF/partials/navbar.jsp" %>
 
+<%--
+  PROFILE PAGE (authenticated)
+  Purpose: view account info, update the full name, change the PIN, or delete
+  the account.
+  Access: logged-in users only (wallet read from sessionScope).
+  Controllers: updateUserWallet (personal info), updateUserWalletPin (change PIN),
+  deleteUserWallet (account deletion).
+  Displays: profile header card, personal-info form, change-PIN form and a
+  danger zone with a delete-account confirmation modal.
+--%>
+
 <main class="main-content">
   <div class="content-wrap" style="max-width:960px">
 
     <%@ include file="WEB-INF/partials/page-head.jsp" %>
 
+    <%-- Profile header: avatar initial, full name, active badge, member-since date, cards shortcut. --%>
     <div class="profile-card mb-4">
       <div class="d-flex align-items-center gap-4 flex-wrap">
         <span class="profile-avatar">${sessionScope.wallet.fullName.charAt(0)}</span>
@@ -77,6 +89,7 @@
 		}
 		
 	%>
+    <%-- The scriptlet above mapped request attributes into per-field error variables used by the forms below. --%>
     <div class="row g-4">
       <div class="col-12 col-lg-6">
         <div class="panel">
@@ -84,6 +97,7 @@
             <h5 class="panel-title"><i class="bi bi-person"></i> <fmt:message key="profile.personal"/></h5>
           </div>
           <div class="panel-body">
+            <%-- Personal info form: full name is editable; phone and national ID are read-only. --%>
             <form action="/E-Wallet/walletController?action=updateUserWallet" method="post" class="validates" id="profile-form" novalidate>
              <% 
           	if(!updateInfoErr.isEmpty()){
@@ -132,6 +146,7 @@
             <h5 class="panel-title"><i class="bi bi-key"></i> <fmt:message key="profile.changePin"/></h5>
           </div>
           <div class="panel-body">
+		<%-- Change PIN form: requires the current PIN, then a new PIN with confirmation and strength meter. --%>
 		<form  action="/E-Wallet/walletController?action=updateUserWalletPin" method="post" class="validates" id="pin-form" novalidate>
               <% 
           	if(!updatePinErr.isEmpty()){
@@ -205,6 +220,7 @@
       </div>
     </div>
 
+    <%-- Danger zone: account deletion; opens the confirmation modal below. --%>
     <div class="panel" style="border:1px solid rgba(var(--danger-rgb,220,53,69),.3)">
       <div class="panel-head">
         <h5 class="panel-title" style="color:var(--danger)"><i class="bi bi-trash"></i> <fmt:message key="profile.deleteZone"/></h5>
@@ -217,6 +233,7 @@
       </div>
     </div>
 
+    <%-- Delete-account modal: re-enter the phone + wallet PIN to confirm account deletion. --%>
     <div class="modal fade" id="deleteProfileModal" tabindex="-1" aria-hidden="true">
       <div class="modal-dialog modal-dialog-centered" style="max-width:360px">
         <div class="modal-content" style="border-radius:18px;border:0;box-shadow:var(--shadow)">
@@ -265,6 +282,8 @@
 </main>
 
 <%@ include file="WEB-INF/partials/footer.jsp" %>
+
+<%-- Re-open the delete modal on page load if the last delete attempt failed with an error. --%>
 
 <%
     

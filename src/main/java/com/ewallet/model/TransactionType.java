@@ -3,20 +3,31 @@ package com.ewallet.model;
 
 import java.util.Objects;
 
+/**
+ * Maps to the {@code transaction_types} table. Lookup entity describing what
+ * kind of operation a transaction performs (e.g. send money, ATM deposit or
+ * ATM withdrawal).
+ */
 public class TransactionType {
 
+    // Lookup fields
     private Long transactionTypeId;
     private String typeName;
 
     public TransactionType() {
     }
 
-    // Insert Constructor
+    /**
+     * Creates a new transaction type (INSERT) from its display name.
+     */
     public TransactionType(String typeName) {
         this.typeName = typeName;
     }
 
-    // Full Constructor
+    /**
+     * Full constructor used when a transaction type row is read back from the
+     * database.
+     */
     public TransactionType(Long transactionTypeId, String typeName) {
         this.transactionTypeId = transactionTypeId;
         this.typeName = typeName;

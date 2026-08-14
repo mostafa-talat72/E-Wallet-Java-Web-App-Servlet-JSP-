@@ -4,28 +4,45 @@ import java.math.BigDecimal;
 import java.sql.Timestamp;
 import java.util.Objects;
 
+/**
+ * Maps to the {@code wallet_balances} table (one row per wallet). Holds the
+ * wallet funds split into an available balance that can be spent and a held
+ * balance that is temporarily reserved for pending transactions.
+ */
 public class WalletBalance {
 
+    // Funds fields: available (spendable) and held (reserved) amounts
     private Long walletId;
     private BigDecimal availableBalance;
     private BigDecimal heldBalance;
     private Timestamp updatedAt;
 
+    /** Default no-arg constructor. */
     public WalletBalance() {
     }
 
-    // Insert Constructor
+    /**
+     * Creates a balance row for a new wallet before the opening amounts are
+     * known; zero balances are supplied by the persistence layer.
+     */
     public WalletBalance(Long walletId) {
 		this.walletId = walletId;
 	}
     
+    /**
+     * Creates a wallet balance from its two fund buckets, e.g. when the
+     * balance is initialized or refreshed after a transaction.
+     */
     public WalletBalance(Long walletId, BigDecimal availableBalance, BigDecimal heldBalance) {
         this.walletId = walletId;
         this.availableBalance = availableBalance;
         this.heldBalance = heldBalance;
     }
 
-    // Full Constructor
+    /**
+     * Full constructor used when a complete balance row is read back from the
+     * database, including the last-updated timestamp.
+     */
     public WalletBalance(Long walletId, BigDecimal availableBalance,
                          BigDecimal heldBalance, Timestamp updatedAt) {
         this.walletId = walletId;

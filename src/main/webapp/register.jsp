@@ -8,6 +8,16 @@
 <c:set var="bodyClass" value="auth-body"/>
 <%@ include file="WEB-INF/partials/head.jsp" %>
 
+<%--
+  REGISTER PAGE (public)
+  Purpose: create a new wallet account with full name, phone number,
+  national ID, PIN and PIN confirmation.
+  Access: public — no session required.
+  Controller: posts to /E-Wallet/walletController?action=signup.
+  Displays: brand/feature panel, registration form, per-field validation
+  errors, PIN strength meter and language toggle (?lang=ar|en).
+--%>
+
 <div class="auth-wrap">
   <div class="auth-brand">
     <div class="auth-brand-top">
@@ -50,12 +60,14 @@
       </div>
       <div class="d-flex justify-content-between align-items-center mb-4">
         <h1 class="auth-title"><fmt:message key="auth.registerTitle"/></h1>
+        <!-- Language toggle: reloads the current page with ?lang=ar|en. -->
         <div class="lang-switch">
           <a href="register.jsp?lang=ar" class="${lang == 'ar' ? 'active' : ''}">عربي</a>
           <a href="register.jsp?lang=en" class="${lang == 'en' ? 'active' : ''}">EN</a>
         </div>
       </div>
       <p class="auth-subtitle"><fmt:message key="auth.registerSubtitle"/></p>
+	<%-- Collect server-side validation errors and map them to per-field variables that prefill the form below. --%>
 	<%
 		Map<String, String> err = (Map<String, String>) request.getAttribute("errors");
 		String fullNameErr = "";
@@ -94,6 +106,7 @@
 		    }
 		}
 	%>
+      <%-- Registration form: full name, phone, national ID, PIN + confirmation, terms checkbox. --%>
       <form action="/E-Wallet/walletController?action=signup" method="post" novalidate>
         <% 
           	if(!siginUpErr.isEmpty()){

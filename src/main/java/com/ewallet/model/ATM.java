@@ -4,27 +4,42 @@ package com.ewallet.model;
 import java.sql.Timestamp;
 import java.util.Objects;
 
+/**
+ * Maps to the {@code atms} table. Represents a cash machine where wallet users
+ * can perform deposit/withdrawal operations without logging in. {@code mapX}
+ * and {@code mapY} place the ATM on the machine-locator map page.
+ */
 public class ATM {
 
+    // Identity fields
     private Long atmId;
     private String atmName;
     private String atmLocation;
+
+    // Status and lifecycle fields
     private Integer status;
     private Timestamp createdAt;
+
+    // Map coordinates used by the ATM locator page
     private Double mapX;
     private Double mapY;
 
     public ATM() {
     }
 
-    // Insert Constructor
+    /**
+     * Creates a new ATM (INSERT) from its name, location and initial status.
+     */
     public ATM(String atmName, String atmLocation, Integer status) {
         this.atmName = atmName;
         this.atmLocation = atmLocation;
         this.status = status;
     }
 
-    // Full Constructor
+    /**
+     * Full constructor used when an ATM row is read back from the database,
+     * including its map coordinates and creation timestamp.
+     */
     public ATM(Long atmId, String atmName, String atmLocation,
                Integer status, Timestamp createdAt, Double mapX, Double mapY) {
         this.atmId = atmId;

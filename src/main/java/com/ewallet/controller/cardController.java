@@ -30,17 +30,25 @@ import com.ewallet.util.DateUtil;
 import com.ewallet.util.LanguageUtil;
 
 /**
- * Servlet implementation class cardController
+ * Controller handling the management of payment cards registered by a
+ * wallet user. Cards are used as funding sources when adding money to
+ * the wallet balance.
+ *
+ * URL mapping: /cardController
+ *
+ * Exposed actions (via the "action" request parameter):
+ *  - addCard          : registers a new card for the logged-in wallet
+ *  - getAllCards      : lists the cards of the logged-in wallet
+ *  - deleteCard       : removes one of the user's cards
+ *  - updateCardStatus : toggles the active/frozen status of a card
+ *  - (any other/missing): redirects to the error page
+ *
+ * Examples:
+ *  http://localhost:8080/E-Wallet/cardController?action=addCard
+ *  http://localhost:8080/E-Wallet/cardController?action=deleteCard
+ *  http://localhost:8080/E-Wallet/cardController?action=getAllCards
+ *  http://localhost:8080/E-Wallet/cardController?action=updateCardStatus
  */
-
-/*http://localhost:8080/E-Wallet/cardController?action=addCard
- *http://localhost:8080/E-Wallet/cardController?action=deleteCard
- *http://localhost:8080/E-Wallet/cardController?action=getAllCards
- *http://localhost:8080/E-Wallet/cardController?action=deleteAllCards
- *http://localhost:8080/E-Wallet/cardController?action=updateCardStatus
- *http://localhost:8080/E-Wallet/cardController
- *http://localhost:8080/E-Wallet/cardController?action=ascls
- * */
 @WebServlet("/cardController")
 public class cardController extends HttpServlet {
 	
@@ -49,11 +57,25 @@ public class cardController extends HttpServlet {
 	
 	private CardService cardService;
 	
+	/**
+	 * Servlet initialization hook. Constructs the CardService used by all
+	 * card-related actions.
+	 */
 	 @Override
     public void init() throws ServletException {
 		 cardService = new CardServiceImpl(dataSource);
     }
 
+	/**
+	 * GET entry point of the controller. Reads the "action" request parameter
+	 * and dispatches to the matching action method. Also handles POST
+	 * requests because doPost delegates to doGet.
+	 *
+	 * @param request  the HTTP request
+	 * @param response the HTTP response
+	 * @throws ServletException if a forward/redirect fails
+	 * @throws IOException      if the response cannot be written
+	 */
 	protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
 		String action = request.getParameter("action");
 		if(action == null)
@@ -81,11 +103,23 @@ public class cardController extends HttpServlet {
 
 	
 
+	/**
+	 * POST entry point of the controller. Delegates all POST requests to
+	 * doGet so that both HTTP verbs share the same action-dispatch logic.
+	 */
 	protected void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
 		doGet(request, response);
 	}
 
+	/**
+	 * Handles the "addCard" action: registers a new payment card for the
+	 * logged-in wallet. Reassembles the card number from its four input
+	 * parts, validates the card details, persists the card and links a
+	 * bank account (account type 2) to it. Re-renders the cards page
+	 * with the updated card list or the validation errors.
+	 */
 	private void addCard(HttpServletRequest request, HttpServletResponse response) {
+		// The card number is entered by the user as four groups of four digits.
 		String cardPart1 = request.getParameter("cardPart1");
 		String cardPart2 = request.getParameter("cardPart2");
 		String cardPart3 = request.getParameter("cardPart3");
@@ -102,6 +136,7 @@ public class cardController extends HttpServlet {
 		Map<String, String> errors = CardValidator.validateForAddCard(cardNumber, cvv, expMonth, expYear);
 		
 		if(errors.isEmpty()) {
+			// Convert the month/year fields into a single expiration date.
 			Date expireDate = DateUtil.convertExpirationDate(expMonth, expYear);
 
 			boolean isAdded = false;
@@ -112,10 +147,12 @@ public class cardController extends HttpServlet {
 				
 			}catch(SQLException e)
 			{
+				// Map database constraints (e.g. a duplicated card number) to user-facing errors.
 				errors = CardValidator.parseSqlException(e);
 			}
 			
 			if(isAdded) {
+				// Link a bank account (account type 2) that references this card.
 				AccountService accountService = new AccountServiceImpl(dataSource);
 				try {
 					accountService.addAcount(new Account(2, cardService.getCardByWalletIdAndCardNumber(wallet.getWalletId(),cardNumber).getCardId()));
@@ -131,6 +168,7 @@ public class cardController extends HttpServlet {
 		}
 		
 		if(!errors.isEmpty()) {
+			// Preserve the form values and error messages for re-rendering the page.
 			request.setAttribute("errors", errors);
 			request.setAttribute("cardPart1ErrVal", cardPart1);
 			request.setAttribute("cardPart2ErrVal", cardPart2);
@@ -150,12 +188,17 @@ public class cardController extends HttpServlet {
 		}
 	}
 
+	/**
+	 * Handles the "getAllCards" action: fetches all cards of the logged-in
+	 * wallet and forwards to the page given by the "redirect" parameter.
+	 */
 	private void getAllCards(HttpServletRequest request, HttpServletResponse response) {
 		Wallet wallet = (Wallet) request.getSession().getAttribute("wallet");
 		String redirect = request.getParameter("redirect");
 		List<Card> cards = cardService.getAllCardsByWalletId(wallet.getWalletId());
 		try {
 			request.setAttribute("cards", cards);
+			// The "redirect" parameter determines which page renders the card list.
 			request.getRequestDispatcher(redirect + ".jsp" + LanguageUtil.langQuery(request)).forward(request, response);
 		} catch (ServletException | IOException e) {
 			// TODO Auto-generated catch block
@@ -163,9 +206,15 @@ public class cardController extends HttpServlet {
 		}
 	}
 	
+	/**
+	 * Handles the "deleteCard" action: deletes one of the user's cards.
+	 * First deactivates the linked bank account, then removes the card
+	 * itself and re-renders the cards page with the remaining cards.
+	 */
 	private void deleteCard(HttpServletRequest request, HttpServletResponse response) {
 		long cardId =Long.parseLong(request.getParameter("cardId"));
 		Wallet wallet = (Wallet) request.getSession().getAttribute("wallet");
+		// Deactivate the linked bank account (account type 2) before deleting the card.
 		boolean updateAccountStatus = new AccountServiceImpl(dataSource).updateAccountStatusByRefereceIdAndTypeId(cardId, 2);
 
 		if(updateAccountStatus)
@@ -186,6 +235,11 @@ public class cardController extends HttpServlet {
 	}
 
 
+	/**
+	 * Handles the "updateCardStatus" action: toggles the status of a card
+	 * (e.g. activate or freeze it) and re-renders the cards page with the
+	 * updated card list.
+	 */
 	private void updateCardStatus(HttpServletRequest request, HttpServletResponse response) {
 		long cardId = Long.parseLong(request.getParameter("cardId"));
 		int status = Integer.parseInt(request.getParameter("status"));
