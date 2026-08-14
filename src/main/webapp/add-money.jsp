@@ -11,7 +11,6 @@
 <c:set var="pageTitle"><fmt:message key="add.title"/></c:set>
 <c:set var="pageSubtitle"><fmt:message key="add.subtitle"/></c:set>
 <c:set var="activeMenu" value="add"/>
-<%@ include file="WEB-INF/partials/demo-data.jsp" %>
 <%@ include file="WEB-INF/partials/head.jsp" %>
 <%@ include file="WEB-INF/partials/navbar.jsp" %>
 
