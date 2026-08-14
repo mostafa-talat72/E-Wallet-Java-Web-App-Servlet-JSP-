@@ -5,7 +5,10 @@ import com.ewallet.model.Account;
 public interface AccountService {
 	boolean addAcount(Account account);
 	
-	boolean deleteAccountByAccountId(long accountId);
+	boolean updateAccountStatusByAccountId(long accountId);
 	
-	boolean deleteAccountByRefereceIdAndTypeId(long referenceId, int accountTypeId);
+	boolean updateAccountStatusByRefereceIdAndTypeId(long referenceId, int accountTypeId);
+
+	Account getAccountByRefereceIdAndTypeId(long referenceId, int accountTypeId);
+	Account getAccountByAccountId(long accountId);
 }

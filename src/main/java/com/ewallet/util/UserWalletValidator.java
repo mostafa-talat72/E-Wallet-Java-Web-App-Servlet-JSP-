@@ -80,7 +80,7 @@ public class UserWalletValidator {
 		}
 	}
 
-	private static void checkPhoneNumber(String phoneNumber, Map<String, String> errors) {
+	public static void checkPhoneNumber(String phoneNumber, Map<String, String> errors) {
 		if(phoneNumber == null || phoneNumber.trim().isEmpty()) {
 			errors.put("phoneNumber", "err.phone.required");
 			return;
@@ -107,7 +107,7 @@ public class UserWalletValidator {
 		}
 	}
 
-	private static void checkPassword(String password, Map<String, String> errors) {
+	public static void checkPassword(String password, Map<String, String> errors) {
 		if(password == null || password.trim().isEmpty()) {
 			errors.put("pin", "err.pin.required");
 			return;

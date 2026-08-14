@@ -35,6 +35,7 @@ import com.ewallet.util.UserWalletValidator;
  *http://localhost:8080/E-Wallet/walletController?action=updateUserWallet
  *http://localhost:8080/E-Wallet/walletController?action=updateUserWalletPin
  *http://localhost:8080/E-Wallet/walletController?action=deleteUserWallet
+ *http://localhost:8080/E-Wallet/walletController?action=logout
  *http://localhost:8080/E-Wallet/walletController
  *http://localhost:8080/E-Wallet/walletController?action=ascls
  * */
@@ -74,6 +75,9 @@ public class walletController extends HttpServlet {
 			break;
 			case "deleteUserWallet":
 				deleteUserWallet(request, response);
+				break;
+			case "logout":
+				logout(request, response);
 				break;
 			default:
 				response.sendRedirect("error.jsp" + LanguageUtil.langQuery(request));
@@ -144,10 +148,10 @@ public class walletController extends HttpServlet {
 
 
 	private void login(HttpServletRequest request, HttpServletResponse response) {
-		
-		String phoneNumber = request.getParameter("phone");
-		String pin = request.getParameter("pin");
-		Wallet wallet = new Wallet(phoneNumber, pin);
+		Wallet wallet = (Wallet) request.getSession().getAttribute("wallet");
+		String phoneNumber = wallet == null? request.getParameter("phone"): wallet.getPhoneNumber();
+		String pin =  wallet == null? request.getParameter("pin") : wallet.getPinHash();
+		wallet = new Wallet(phoneNumber, pin);
 		
 		Map<String, String> errors = UserWalletValidator.validateForLogin(phoneNumber, pin);
 		
@@ -285,11 +289,11 @@ public class walletController extends HttpServlet {
 				
 				boolean deleteWalletBalance = new EWalletBalanceServiceImpl(dataSource).deleteWalletBalanceByWalletId(wallet.getWalletId());
 				
-				boolean deleteAccount = new AccountServiceImpl(dataSource).deleteAccountByRefereceIdAndTypeId(wallet.getWalletId(), 1);
+				boolean updateAccountStatus = new AccountServiceImpl(dataSource).updateAccountStatusByRefereceIdAndTypeId(wallet.getWalletId(), 1);
 				
 				boolean deleteAllCards= new CardServiceImpl(dataSource).deleteAllCardsByWalletId(wallet.getWalletId());
 
-				if(!deleteWalletBalance || !deleteAccount || !deleteAllCards) {
+				if(!deleteWalletBalance || !updateAccountStatus || !deleteAllCards) {
 					errors.put("deletedError", "err.delete.failed");
 					
 				}else {
@@ -328,5 +332,13 @@ public class walletController extends HttpServlet {
 			}
 		}
 	}
-
+	
+	private void logout(HttpServletRequest request, HttpServletResponse response) {
+		request.getSession().invalidate();
+		try {
+			response.sendRedirect("login.jsp" + LanguageUtil.langQuery(request));
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+	}
 }

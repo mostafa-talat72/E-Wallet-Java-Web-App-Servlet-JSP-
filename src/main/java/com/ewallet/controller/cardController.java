@@ -166,9 +166,9 @@ public class cardController extends HttpServlet {
 	private void deleteCard(HttpServletRequest request, HttpServletResponse response) {
 		long cardId =Long.parseLong(request.getParameter("cardId"));
 		Wallet wallet = (Wallet) request.getSession().getAttribute("wallet");
-		boolean deleteAccount = new AccountServiceImpl(dataSource).deleteAccountByRefereceIdAndTypeId(cardId, 2);
+		boolean updateAccountStatus = new AccountServiceImpl(dataSource).updateAccountStatusByRefereceIdAndTypeId(cardId, 2);
 
-		if(deleteAccount)
+		if(updateAccountStatus)
 		{
 			boolean isDeleted = cardService.deleteCard(cardId, wallet.getWalletId());
 			

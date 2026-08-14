@@ -1,14 +1,30 @@
+<%@page import="java.sql.Timestamp"%>
+<%@page import="java.math.BigDecimal"%>
 <%@ page contentType="text/html; charset=UTF-8" pageEncoding="UTF-8" %>
+<%@ page import="java.util.List" %>
+<%@ page import="java.util.Map" %>
+<%@ page import="java.util.ArrayList" %>
+<%@ page import="com.ewallet.model.Transaction" %>
+<%@ page import="com.ewallet.model.Wallet" %>
+
 <%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core" %>
 <%@ taglib prefix="fmt" uri="http://java.sun.com/jsp/jstl/fmt" %>
 <%@ include file="WEB-INF/partials/lang.jsp" %>
 <c:set var="pageTitle"><fmt:message key="tx.title"/></c:set>
 <c:set var="pageSubtitle"><fmt:message key="tx.subtitle"/></c:set>
 <c:set var="activeMenu" value="transactions"/>
-<%@ include file="WEB-INF/partials/demo-data.jsp" %>
 <%@ include file="WEB-INF/partials/head.jsp" %>
 <%@ include file="WEB-INF/partials/navbar.jsp" %>
+<%
 
+	List<Transaction> transactions =(List<Transaction>) request.getAttribute("transactions");
+	List<Map.Entry<String, String>> toOrFromNames = (List<Map.Entry<String, String>>) request.getAttribute("toOrFromNames");
+	if (transactions == null) {
+		response.sendRedirect("transactionController?action=allTtransaction");
+		return;
+	}
+	Wallet wallet = (Wallet) request.getSession().getAttribute("wallet");
+%>
 <main class="main-content">
   <div class="content-wrap">
 
@@ -28,7 +44,6 @@
           <button type="button" class="filter-pill" data-filter-pill="withdraw"><fmt:message key="tx.filter.withdraw"/></button>
           <button type="button" class="filter-pill" data-filter-pill="deposit"><fmt:message key="tx.filter.deposit"/></button>
           <button type="button" class="filter-pill" data-filter-pill="transfer"><fmt:message key="tx.filter.transfer"/></button>
-          <button type="button" class="filter-pill" data-filter-pill="receive"><fmt:message key="tx.filter.receive"/></button>
         </div>
         <div class="topbar-search d-none d-md-flex" style="min-width:300px">
           <i class="bi bi-search"></i>
@@ -49,34 +64,66 @@
             </tr>
           </thead>
           <tbody>
-            <c:forEach var="tx" items="${transactions}">
-              <tr data-tx-row data-type="${tx.type}" data-amount="${tx.amount}">
-                <td>
-                  <div class="tx-cell">
-                    <span class="tx-icon ${tx.amount > 0 ? 'in' : tx.status == 'failed' ? 'failed' : tx.status == 'pending' ? 'pending' : 'out'}">
-                      <i class="bi ${tx.amount > 0 ? 'bi-arrow-down-left' : tx.type == 'transfer' ? 'bi-send' : tx.type == 'withdraw' ? 'bi-cash-stack' : 'bi-arrow-up-right'}"></i>
-                    </span>
-                    <strong class="small"><fmt:message key="tx.type.${tx.type}"/></strong>
-                  </div>
-                </td>
-                <td><span class="small" style="direction:ltr;display:inline-block">${tx.from}</span></td>
-                <td><span class="small" style="direction:ltr;display:inline-block">${tx.to}</span></td>
-                <td><span class="ref-code">${tx.ref}</span></td>
-                <td><span class="small" style="direction:ltr;display:inline-block">${tx.date}</span></td>
-                <td class="text-end">
-                  <span class="fw-bold ${tx.amount > 0 ? 'text-success' : 'text-danger'}">
-                    ${tx.amount > 0 ? '+' : '−'}<fmt:formatNumber value="${tx.amount > 0 ? tx.amount : -tx.amount}" pattern="#,##0.00"/>
-                  </span>
-                </td>
-                <td class="text-center">
-                  <c:choose>
-                    <c:when test="${tx.status == 'success'}"><span class="badge badge-success"><fmt:message key="common.success"/></span></c:when>
-                    <c:when test="${tx.status == 'pending'}"><span class="badge badge-warning"><fmt:message key="common.pending"/></span></c:when>
-                    <c:otherwise><span class="badge badge-danger"><fmt:message key="common.failed"/></span></c:otherwise>
-                  </c:choose>
-                </td>
-              </tr>
-            </c:forEach>
+            <%
+            	if(transactions!=null){
+            		for(int i = 0; i < transactions.size(); i++){
+            			long transactionStatusId = transactions.get(i).getTransactionTypeId();
+            			String type = transactionStatusId == 1? "deposit" : transactionStatusId == 2? "withdraw": "transfer";
+            		pageContext.setAttribute("txType", type);
+            			String typeDesign = transactionStatusId == 1? "bi-arrow-down-left" : transactionStatusId == 2? "bi-cash-stack": " bi-send";
+
+            			BigDecimal amount = transactions.get(i).getAmount();
+            			String inOrOut = "in";
+            			String from = wallet.getPhoneNumber(), to = wallet.getPhoneNumber();
+            			if(toOrFromNames.get(i).getValue().equals("to")){
+            				inOrOut = "out";
+            				to = toOrFromNames.get(i).getKey();
+            			}else{
+            				from = toOrFromNames.get(i).getKey();
+            			}
+            			String txRef = transactions.get(i).getReferenceNumber();
+            			Timestamp date = transactions.get(i).getCreatedAt();
+            %>
+		              <tr data-tx-row data-type="<%= type %>" data-amount="<%= amount %>">
+		                <td>
+		                  <div class="tx-cell">
+		                    <span class="tx-icon <%= inOrOut %>">
+		                      <i class="bi <%= typeDesign %>"></i>
+		                    </span>
+		                    <strong class="small"><fmt:message key="tx.type.${txType}"/></strong>
+		                  </div>
+		                </td>
+		                <td><span class="small" style="direction:ltr;display:inline-block"><%= from %></span></td>
+		                <td><span class="small" style="direction:ltr;display:inline-block"><%= to %></span></td>
+		                <td><span class="ref-code"><%= txRef %></span></td>
+		                <td><span class="small" style="direction:ltr;display:inline-block"><%= date %></span></td>
+		                <td class="text-end">
+		                  <span class="fw-bold <%= inOrOut.equals("in")? " text-success" : " text-danger" %>">
+		                    <%= inOrOut.equals("in")? "+" : "-" %><fmt:formatNumber value="<%= amount %>" pattern="#,##0.00"/>
+		                  </span>
+		                </td>
+		                <td class="text-center">
+		                    <%
+		                    	if(transactions.get(i).getTransactionStatusId() == 1){
+		                    %>
+		                    <span class="badge badge-warning"><fmt:message key="common.pending"/></span>
+		                    <%
+		                    }else if(transactions.get(i).getTransactionStatusId() == 2)	{	                    
+		                    %>
+		                    <span class="badge badge-success"><fmt:message key="common.success"/></span>
+		                    <%
+		                    }else 	 {                   
+		                    %>
+		                    <span class="badge badge-danger"><fmt:message key="common.failed"/></span>
+							<%
+							}
+							%>
+		                </td>
+		              </tr>
+			<%
+            		}
+            	}
+			%>
             <tr class="empty-no-tx" style="display:none">
               <td colspan="6">
                 <div class="empty-state">
@@ -90,7 +137,7 @@
       </div>
       <div class="panel-foot d-flex justify-content-between align-items-center flex-wrap gap-2">
         <span class="small text-muted">
-          <fmt:message key="tx.showing"/> <strong>1</strong>–<strong>8</strong> ${transactions.size()} | <strong>2026-08-04</strong>
+          <fmt:message key="tx.showing"/> <strong>1</strong>–<strong>8</strong> <%= transactions.size() %>
         </span>
         <div class="d-flex gap-2">
           <button type="button" class="btn btn-outline-line btn-sm disabled"><fmt:message key="common.back"/></button>

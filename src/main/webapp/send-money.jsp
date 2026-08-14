@@ -1,4 +1,7 @@
+<%@page import="java.math.BigDecimal"%>
 <%@ page contentType="text/html; charset=UTF-8" pageEncoding="UTF-8" %>
+<%@ page import="java.util.Map" %>
+<%@ page import="java.math.BigDecimal" %>
 <%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core" %>
 <%@ taglib prefix="fmt" uri="http://java.sun.com/jsp/jstl/fmt" %>
 <%@ taglib prefix="fn" uri="http://java.sun.com/jsp/jstl/functions" %>
@@ -6,10 +9,37 @@
 <c:set var="pageTitle"><fmt:message key="send.title"/></c:set>
 <c:set var="pageSubtitle"><fmt:message key="send.subtitle"/></c:set>
 <c:set var="activeMenu" value="send"/>
-<%@ include file="WEB-INF/partials/demo-data.jsp" %>
 <%@ include file="WEB-INF/partials/head.jsp" %>
 <%@ include file="WEB-INF/partials/navbar.jsp" %>
+<%
+		Map<String, String> err = (Map<String, String>) request.getAttribute("errors");
+		String recipientPhoneErr = "";
+		String pinErr = "";
+		String amountErr = "";
 
+		
+		String recipientPhoneVal = request.getAttribute("recipientPhoneVal") == null? "" :(String) request.getAttribute("recipientPhoneVal");
+		String pinVal = request.getAttribute("pinVal") == null? "" :(String) request.getAttribute("pinVal");
+		BigDecimal amountVal = request.getAttribute("amountVal") == null? new  BigDecimal(0) :(BigDecimal) request.getAttribute("amountVal");
+		String noteVal = request.getAttribute("noteVal") == null? "" :(String) request.getAttribute("noteVal");
+
+	
+		
+		if(err != null) {
+		    for(Map.Entry<String, String> entry : err.entrySet()) {
+		        String key = entry.getKey();
+		        String value = entry.getValue();
+		        
+		        if("phoneNumber".equals(key)) {
+		        	recipientPhoneErr = value;
+		        } else if("pin".equals(key)) {
+		            pinErr = value;
+		        }else if("amount".equals(key)) {
+		        	amountErr = value;
+		        }
+		    }
+		}
+	%>
 <main class="main-content">
   <div class="content-wrap" style="max-width:860px">
 
@@ -18,6 +48,7 @@
     </c:set>
     <%@ include file="WEB-INF/partials/page-head.jsp" %>
 
+    <form id="sendMoneyForm" class="validates" action="${appURL}transactionController?action=transfer" method="post" novalidate>
     <div data-stepper>
       <div class="stepper mb-4">
         <div class="step active" data-step-dot>
@@ -28,32 +59,35 @@
           <div class="step-circle"><i class="bi bi-check-lg"></i>2</div>
           <div class="step-label"><fmt:message key="send.review"/></div>
         </div>
-        <div class="step" data-step-dot>
-          <div class="step-circle"><i class="bi bi-check-lg"></i>3</div>
-          <div class="step-label"><fmt:message key="send.otp.title"/></div>
-        </div>
       </div>
 
       <div class="panel step-panel">
         <div class="panel-body">
-          <form class="validates" novalidate>
             <div class="mb-4">
               <label class="form-label" for="recipient"><fmt:message key="send.recipient"/></label>
-              <input type="tel" class="form-control form-control-lg${not empty err.recipient ? ' is-invalid' : ''}" id="recipient" name="recipient"
-                     value="${fn:escapeXml(param.recipient)}"
+              <input type="tel" class="form-control form-control-lg<%= !recipientPhoneErr.isEmpty()? " is-invalid":"" %>" id="recipient" name="recipient"
+                     value="<%= recipientPhoneVal %>"
                      placeholder="<fmt:message key="send.recipientPh"/>" data-phone required>
-              <c:if test="${not empty err.recipient}"><div class="form-error show"><fmt:message key="${err.recipient}"/></div></c:if>
-              <div class="mt-2 d-flex gap-2 flex-wrap">
-                <button type="button" class="btn btn-outline-line btn-sm" data-contact="recipient" data-number="01123456789">01123456789</button>
-                <button type="button" class="btn btn-outline-line btn-sm" data-contact="recipient" data-number="01098765432">01098765432</button>
-              </div>
+                <% 
+	          	if(!recipientPhoneErr.isEmpty()){
+	          %>
+              <div class="form-error show"><fmt:message key="<%= recipientPhoneErr %>"/></div>
+              <% 
+	          	}
+	          %>
             </div>
             <div class="mb-4">
               <label class="form-label" for="amount"><fmt:message key="common.amount"/> (<fmt:message key="common.currency"/>)</label>
-              <input type="number" class="form-control form-control-lg${not empty err.amount ? ' is-invalid' : ''}" id="amount" name="amount"
-                     value="${fn:escapeXml(param.amount)}"
+              <input type="number" class="form-control form-control-lg<%= !amountErr.isEmpty()? " is-invalid":"" %>" id="amount" name="amount"
+                     value="<%= amountVal %>"
                      min="1" step="0.01" placeholder="0.00" required>
-              <c:if test="${not empty err.amount}"><div class="form-error show"><fmt:message key="${err.amount}"/></div></c:if>
+               <% 
+	          	if(!amountErr.isEmpty()){
+	          %>
+             <div class="form-error show"><fmt:message key="<%= amountErr %>"/></div>
+              <% 
+	          	}
+	          %>
               <div class="mt-2 d-flex gap-2 flex-wrap" data-amount-chips="amount">
                 <button type="button" class="btn btn-outline-line btn-sm chip" data-value="50">50</button>
                 <button type="button" class="btn btn-outline-line btn-sm chip" data-value="100">100</button>
@@ -63,21 +97,19 @@
             </div>
             <div class="mb-4">
               <label class="form-label" for="note"><fmt:message key="send.note"/></label>
-              <input type="text" class="form-control${not empty err.note ? ' is-invalid' : ''}" id="note" name="note"
-                     value="${fn:escapeXml(param.note)}"
+              <input type="text" class="form-control" id="note" name="note"
+                     value="<%= noteVal %>"
                      placeholder="<fmt:message key="send.notePh"/>" maxlength="200">
-              <c:if test="${not empty err.note}"><div class="form-error show"><fmt:message key="${err.note}"/></div></c:if>
             </div>
             <div class="d-flex justify-content-between align-items-center">
               <span class="small text-muted fw-semibold">
                 <fmt:message key="common.available"/>:
-                <strong class="text-success"><fmt:formatNumber value="${sessionScope.wallet.status}" pattern="#,##0.00"/> <fmt:message key="common.currency"/></strong>
+                <strong class="text-success"><fmt:formatNumber value="${sessionScope.walletBalance.availableBalance}" pattern="#,##0.00"/> <fmt:message key="common.currency"/></strong>
               </span>
               <button type="button" class="btn btn-primary btn-lg" data-next>
                 <fmt:message key="common.continue"/> <i class="bi bi-arrow-left"></i>
               </button>
             </div>
-          </form>
         </div>
       </div>
 
@@ -97,77 +129,76 @@
             </div>
             <div class="receipt-row">
               <span><fmt:message key="send.fees"/></span>
-              <strong>0.00 <fmt:message key="common.currency"/></strong>
+              <strong data-fee-calc data-fee-source="#amount" data-fee-rate="0.001" data-fee-cur="<fmt:message key="common.currency"/>" data-fee-target="#preview-total">0.00 <fmt:message key="common.currency"/></strong>
             </div>
             <div class="receipt-row">
               <span><fmt:message key="send.total"/></span>
-              <strong class="text-success" id="preview-total" data-fill="#amount">—</strong>
+              <strong class="text-success" id="preview-total">—</strong>
             </div>
             <div class="receipt-row">
               <span><fmt:message key="send.note"/></span>
               <strong id="preview-note" data-fill="#note">—</strong>
             </div>
           </div>
+          <div class="mb-4 mt-4 text-center">
+            <label class="form-label" for="pin"><fmt:message key="common.pin"/></label>
+            <p class="text-muted mb-3" style="font-size:.9rem"><fmt:message key="send.otp.desc"/></p>
+            <div class="input-group input-group-lg mx-auto" style="max-width:280px">
+              <input type="password" class="form-control text-center" id="pin" name="pin"
+                     placeholder="••••••" value="${fn:escapeXml(param.pin)}"
+                     data-pin-input inputmode="numeric" dir="ltr" autocomplete="off" required>
+              <button class="input-group-text" type="button" data-toggle-pin="pin" tabindex="-1">
+                <i class="bi bi-eye"></i>
+              </button>
+            </div>
+          </div>
           <div class="d-flex justify-content-between gap-3">
             <button type="button" class="btn btn-outline-line btn-lg" data-prev>
               <i class="bi bi-arrow-right"></i> <fmt:message key="common.back"/>
             </button>
-            <button type="button" class="btn btn-primary btn-lg" data-next>
+            <button type="submit" class="btn btn-primary btn-lg" data-finish>
               <fmt:message key="common.confirm"/> <i class="bi bi-shield-check"></i>
             </button>
           </div>
         </div>
       </div>
-
-      <div class="panel step-panel d-none">
-        <div class="panel-body text-center">
-          <div class="success-wrap" style="padding-bottom:0">
-            <div class="success-icon" style="width:72px;height:72px;font-size:2.2rem"><i class="bi bi-shield-lock"></i></div>
-            <h3 class="fw-bold"><fmt:message key="send.otp.title"/></h3>
-            <p class="text-muted">
-              <fmt:message key="send.otp.desc"/>
-            </p>
-            <p class="text-muted small mb-3"><fmt:message key="send.preview.to"/> <strong style="direction:ltr" id="otp-phone" data-fill="#recipient">—</strong></p>
-              <div class="otp-wrap">
-              <div class="otp-row" dir="ltr">
-                <input type="password" class="otp-input${not empty err.otp ? ' is-invalid' : ''}" data-otp maxlength="1" inputmode="numeric" dir="ltr">
-                <input type="password" class="otp-input" data-otp maxlength="1" inputmode="numeric" dir="ltr">
-                <input type="password" class="otp-input" data-otp maxlength="1" inputmode="numeric" dir="ltr">
-                <input type="password" class="otp-input" data-otp maxlength="1" inputmode="numeric" dir="ltr">
-                <input type="password" class="otp-input" data-otp maxlength="1" inputmode="numeric" dir="ltr">
-                <input type="password" class="otp-input" data-otp maxlength="1" inputmode="numeric" dir="ltr">
-              </div>
-              <c:if test="${not empty err.otp}"><div class="form-error show" style="margin-top:.5rem"><fmt:message key="${err.otp}"/></div></c:if>
-              <button type="button" class="btn btn-sm btn-outline-line mt-2" data-toggle-otp aria-label="Show PIN">
-                <i class="bi bi-eye"></i>
-              </button>
-            </div>
-            <p class="text-muted small"><fmt:message key="common.pin"/></p>
-            <div class="d-flex justify-content-center gap-3 mb-4">
-              <button type="button" class="btn btn-outline-line btn-lg" data-prev>
-                <i class="bi bi-arrow-right"></i> <fmt:message key="common.back"/>
-              </button>
-              <button type="button" class="btn btn-primary btn-lg" data-otp-verify="#send-success">
-                <fmt:message key="common.confirm"/> <i class="bi bi-check-lg"></i>
-              </button>
-            </div>
-            <p class="text-muted small mt-2 mb-0" style="direction:ltr">Demo PIN: <b>123456</b></p>
-          </div>
-        </div>
-      </div>
     </div>
+    </form>
 
-    <div id="send-success" class="panel d-none">
+    <div class="panel shadow-sm d-none" data-done>
       <div class="panel-body">
         <div class="success-wrap">
-          <div class="success-icon"><i class="bi bi-check-lg"></i></div>
-          <h2 class="fw-bold mb-2"><fmt:message key="send.success.title"/></h2>
-          <p class="text-muted"><fmt:message key="send.success.desc"/></p>
-          <div class="receipt">
-            <div class="receipt-row"><span><fmt:message key="send.preview.to"/></span><strong style="direction:ltr" id="ok-phone" data-fill="#recipient">—</strong></div>
-            <div class="receipt-row"><span><fmt:message key="common.amount"/></span><strong id="ok-amount" data-fill="#amount">—</strong></div>
-            <div class="receipt-row"><span><fmt:message key="common.ref"/></span><strong class="ref-code">TX-882135</strong></div>
-            <div class="receipt-row"><span><fmt:message key="common.date"/></span><strong style="direction:ltr">2026-08-04 15:20</strong></div>
+          <c:choose>
+            <c:when test="${not empty error}">
+              <div class="success-icon" style="background:var(--danger)"><i class="bi bi-x-lg"></i></div>
+              <h2 class="fw-bold mb-2"><fmt:message key="send.fail.title"/></h2>
+              <p class="text-muted"><fmt:message key="send.fail.desc"/></p>
+              <div class="form-alert" style="max-width:440px;margin:0 auto 1rem;text-align:start" role="alert">
+                <i class="bi bi-exclamation-circle-fill"></i>
+                <span><fmt:message key="${error}"/></span>
+              </div>
+            </c:when>
+            <c:otherwise>
+              <div class="success-icon"><i class="bi bi-check-lg"></i></div>
+              <h2 class="fw-bold mb-2"><fmt:message key="send.success.title"/></h2>
+              <p class="text-muted"><fmt:message key="send.success.desc"/></p>
+              <c:if test="${not empty success}">
+                <div class="form-alert" style="max-width:440px;margin:0 auto 1rem;text-align:start" role="alert">
+                  <i class="bi bi-check-circle-fill"></i>
+                  <span><fmt:message key="send.success.done"/></span>
+                </div>
+              </c:if>
+            </c:otherwise>
+          </c:choose>
+          <div class="receipt" style="max-width:none">
+            <div class="receipt-row"><span><fmt:message key="send.preview.to"/></span><strong style="direction:ltr" data-fill="#recipient">—</strong></div>
+            <div class="receipt-row"><span><fmt:message key="common.amount"/></span><strong data-fill="#amount"><%= request.getAttribute("amountVal") != null? (BigDecimal)request.getAttribute("amountVal") : new BigDecimal(0) %></strong></div>
+            <div class="receipt-row"><span><fmt:message key="send.fees"/></span><strong><%= request.getAttribute("feesVal") != null? (BigDecimal)request.getAttribute("feesVal") : new BigDecimal(0) %> <fmt:message key="common.currency"/></strong></div>
+            <div class="receipt-row"><span><fmt:message key="send.total"/></span><strong class="text-success"><%= request.getAttribute("feesVal") != null && request.getAttribute("amountVal") != null? ((BigDecimal)request.getAttribute("feesVal")).add((BigDecimal)request.getAttribute("amountVal")) : new BigDecimal(0) %> <fmt:message key="common.currency"/></strong></div>
+            <div class="receipt-row"><span><fmt:message key="send.note"/></span><strong><%= request.getAttribute("noteVal") != null? request.getAttribute("noteVal") : "—" %></strong></div>
+            <div class="receipt-row"><span><fmt:message key="common.ref"/></span><strong class="ref-code">
+            <%= request.getAttribute("txRef") != null? request.getAttribute("txRef") : request.getAttribute("transactionReference") != null? request.getAttribute("transactionReference") : "—" %></strong></div>
+            <div class="receipt-row"><span><fmt:message key="common.date"/></span><strong style="direction:ltr"><%= request.getAttribute("txDate") != null? request.getAttribute("txDate") : request.getAttribute("created_at") != null? request.getAttribute("created_at") : "—" %></strong></div>
           </div>
           <div class="d-flex justify-content-center gap-2 flex-wrap">
             <a href="${appURL}send-money.jsp${qLang}" class="btn btn-primary btn-lg">
@@ -183,5 +214,20 @@
 
   </div>
 </main>
+
+<%
+	String doneFlag = (String) request.getAttribute("done");
+	String errFlag = (String) request.getAttribute("error");
+	if ((doneFlag != null && !doneFlag.isEmpty()) || (errFlag != null && !errFlag.isEmpty())) {
+%>
+<script>
+  document.getElementById("sendMoneyForm").classList.add("d-none");
+  var donePanel = document.querySelector("[data-done]");
+  if (donePanel) donePanel.classList.remove("d-none");
+  window.scrollTo({ top: 0, behavior: "smooth" });
+</script>
+<%
+	}
+%>
 
 <%@ include file="WEB-INF/partials/footer.jsp" %>

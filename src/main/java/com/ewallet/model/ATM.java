@@ -11,6 +11,8 @@ public class ATM {
     private String atmLocation;
     private Integer status;
     private Timestamp createdAt;
+    private Double mapX;
+    private Double mapY;
 
     public ATM() {
     }
@@ -24,12 +26,30 @@ public class ATM {
 
     // Full Constructor
     public ATM(Long atmId, String atmName, String atmLocation,
-               Integer status, Timestamp createdAt) {
+               Integer status, Timestamp createdAt, Double mapX, Double mapY) {
         this.atmId = atmId;
         this.atmName = atmName;
         this.atmLocation = atmLocation;
         this.status = status;
         this.createdAt = createdAt;
+        this.mapX = mapX;
+        this.mapY = mapY;
+    }
+
+    public Double getMapX() {
+        return mapX;
+    }
+
+    public void setMapX(Double mapX) {
+        this.mapX = mapX;
+    }
+
+    public Double getMapY() {
+        return mapY;
+    }
+
+    public void setMapY(Double mapY) {
+        this.mapY = mapY;
     }
 
     public Long getAtmId() {

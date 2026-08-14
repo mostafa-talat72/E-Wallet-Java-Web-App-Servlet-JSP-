@@ -1,0 +1,447 @@
+package com.ewallet.controller;
+
+import java.io.IOException;
+import java.math.BigDecimal;
+import java.sql.SQLException;
+import java.sql.Timestamp;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+import javax.annotation.Resource;
+import javax.servlet.ServletException;
+import javax.servlet.annotation.WebServlet;
+import javax.servlet.http.HttpServlet;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+import javax.sql.DataSource;
+
+import com.ewallet.model.Account;
+import com.ewallet.model.Card;
+import com.ewallet.model.Transaction;
+import com.ewallet.model.TransactionCode;
+import com.ewallet.model.Wallet;
+import com.ewallet.model.WalletBalance;
+import com.ewallet.service.EWalletUserService;
+import com.ewallet.service.TransactionService;
+import com.ewallet.service.impl.ATMServiceImpl;
+import com.ewallet.service.impl.AccountServiceImpl;
+import com.ewallet.service.impl.CardServiceImpl;
+import com.ewallet.service.impl.EWalletBalanceServiceImpl;
+import com.ewallet.service.impl.EWalletUserServiceImpl;
+import com.ewallet.service.impl.TransactionCodeServiceImpl;
+import com.ewallet.service.impl.TransactionServiceImpl;
+import com.ewallet.util.LanguageUtil;
+import com.ewallet.util.TransactionUtil;
+import com.ewallet.util.TransactionValidator;
+import com.ewallet.util.UserWalletValidator;
+
+/*http://localhost:8080/E-Wallet/transactionControllerr?action=addMoney
+ *http://localhost:8080/E-Wallet/transactionController?action=deposit
+ *http://localhost:8080/E-Wallet/transactionController?action=transfer
+ *http://localhost:8080/E-Wallet/transactionController?action=atmExecute
+ *http://localhost:8080/E-Wallet/transactionController?action=allTtransaction
+ *http://localhost:8080/E-Wallet/transactionController
+ *http://localhost:8080/E-Wallet/transactionController?action=ascls
+ * */
+@WebServlet("/transactionController")
+public class transactionController extends HttpServlet {
+	
+	@Resource(name = "jdbc/ewallet/dBconnection")
+	private DataSource dataSource;
+		
+	private TransactionService transactionService;
+
+	
+	 @Override
+   public void init() throws ServletException {
+		 transactionService = new TransactionServiceImpl(dataSource);
+   }
+
+	protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
+		String action = request.getParameter("action");
+		if(action==null) {
+			action = "notFoundPage";
+		}
+		
+		switch(action) {
+			case "addMoney":
+				addMoney(request, response);
+				break;
+			case "atmExecute":
+			    String type = request.getParameter("type");
+			    if ("withdraw".equals(type)) {
+			        withdraw(request, response);
+			    } else if ("deposit".equals(type)) {
+			        deposit(request, response);
+			    } else {
+			        response.setContentType("application/json;charset=UTF-8");
+					response.getWriter().write("{\"ok\":false,\"error\":\"err.atm.invalid_code\"}");
+			    }
+			    break;
+			    
+			case "transfer":
+				transfer(request, response);
+				break;
+			case "allTtransaction":
+				allTtransaction(request, response);
+				break;
+			default:
+				response.sendRedirect("error.jsp" + LanguageUtil.langQuery(request));
+				break;
+						
+		}
+	}
+
+
+	protected void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
+		doGet(request, response);
+	}
+	
+
+	private void addMoney(HttpServletRequest request, HttpServletResponse response) {
+		String pin = request.getParameter("pin");
+		Wallet wallet = (Wallet) request.getSession().getAttribute("wallet");
+		Wallet checkWalletExist = null;
+		boolean isBalanceAdded = false;
+		try {
+			checkWalletExist = new EWalletUserServiceImpl(dataSource).login(new Wallet(wallet.getPhoneNumber(),pin));
+		} catch (SQLException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		
+		if(checkWalletExist != null) {
+			String cardNumber =  request.getParameter("cardNumber");
+			BigDecimal amount =  new BigDecimal(request.getParameter("amount"));
+
+			Card card = new CardServiceImpl(dataSource).getCardByWalletIdAndCardNumber(wallet.getWalletId(), cardNumber);
+			if(card != null) {
+				Account accountFrom = new AccountServiceImpl(dataSource).getAccountByRefereceIdAndTypeId(card.getCardId(), 2);
+				if(accountFrom != null) {
+					Account accountTo = new AccountServiceImpl(dataSource).getAccountByRefereceIdAndTypeId(card.getWalletId(), 1);
+					if(accountTo != null) {
+						String transactionReference = "TX-" + TransactionUtil.generateTransactionCode();
+						Transaction transaction = new Transaction(
+							accountFrom.getAccountId(),
+							accountTo.getAccountId(),
+							1L,
+							2L,
+							amount,
+							new BigDecimal(0),
+							transactionReference,
+							""
+								);
+						boolean isAdded = transactionService.addTransaction(transaction);
+						if(isAdded) {
+							WalletBalance currentBalance = new EWalletBalanceServiceImpl(dataSource).getWalletBalanceByWalletId(wallet.getWalletId()); 
+							if(currentBalance != null) {
+
+								currentBalance.setAvailableBalance(
+									    amount.add(currentBalance.getAvailableBalance())
+									);
+								WalletBalance newBalance = new EWalletBalanceServiceImpl(dataSource).updateWalletBalance(currentBalance);
+								if(newBalance != null) {
+
+									request.getSession().setAttribute("walletBalance", newBalance);
+									
+									isBalanceAdded = true;
+									request.setAttribute("done", "1");
+									request.setAttribute("cardNumberTransaction", "•••• •••• •••• " + cardNumber.substring(12));
+									request.setAttribute("transactionReference", transactionReference);
+									request.setAttribute("created_at", new Timestamp(System.currentTimeMillis()));
+								}
+							}
+						}
+					}
+				}
+			}
+		}
+	
+		
+		if(!isBalanceAdded) {
+			request.setAttribute("error", "err.payment.failed");
+		}
+		
+		 try {
+	        List<Card> cards = new CardServiceImpl(dataSource).getAllCardsByWalletId(wallet.getWalletId());
+	        request.setAttribute("cards", cards);
+	        request.getRequestDispatcher("add-money.jsp" + LanguageUtil.langQuery(request)).forward(request, response);
+	    } catch (ServletException | IOException e) {
+	        e.printStackTrace();
+	    }
+
+	}
+
+
+	
+	
+	private void transfer(HttpServletRequest request, HttpServletResponse response) {
+		String recipientPhone = request.getParameter("recipient");
+		BigDecimal amount = new BigDecimal(request.getParameter("amount"));
+		String note = request.getParameter("note");
+		String pin = request.getParameter("pin");
+		Wallet wallet = (Wallet) request.getSession().getAttribute("wallet");
+		boolean isBalanceAdded = false;
+
+		Map<String,String> errors = TransactionValidator.validateSendMoney(recipientPhone, amount, pin);
+		if(errors.isEmpty()) {
+			Wallet recipientWallet = null;
+			try {
+				 recipientWallet = new EWalletUserServiceImpl(dataSource).getUserWalletByPhoneNumber(recipientPhone);
+			} catch (SQLException e) {
+				e.printStackTrace();
+			}
+			if(recipientWallet != null && !wallet.getPhoneNumber().equals(recipientPhone)) {
+				WalletBalance currWalletBalance = new EWalletBalanceServiceImpl(dataSource).getWalletBalanceByWalletId(wallet.getWalletId());
+				WalletBalance recipientWalletBalance = new EWalletBalanceServiceImpl(dataSource).getWalletBalanceByWalletId(recipientWallet.getWalletId());
+				if(currWalletBalance.getAvailableBalance().compareTo(amount.add(amount.divide(new BigDecimal(1000)))) < 0) {
+					errors.put("amount", "err.amount.invalid");
+				}
+				if(currWalletBalance != null && recipientWalletBalance != null && currWalletBalance.getAvailableBalance().compareTo(amount.add(amount.divide(new BigDecimal(1000)))) >= 0) {
+					Account currAccount = new AccountServiceImpl(dataSource).getAccountByRefereceIdAndTypeId(wallet.getWalletId(), 1);
+					Account recipienAccount = new AccountServiceImpl(dataSource).getAccountByRefereceIdAndTypeId(recipientWallet.getWalletId(), 1);
+					if(currAccount != null && recipienAccount != null) {
+						String transactionReference = "TX-" + TransactionUtil.generateTransactionCode();
+						Transaction transaction = new Transaction(
+								currAccount.getAccountId(),
+								recipienAccount.getAccountId(),
+							3L,
+							2L,
+							amount,
+							amount.divide(new BigDecimal(1000)),
+							transactionReference,
+							""
+								);
+						boolean isAdded = transactionService.addTransaction(transaction);
+						if(isAdded) {
+							
+							currWalletBalance.setAvailableBalance(
+									currWalletBalance.getAvailableBalance().subtract(amount.add(amount.divide(new BigDecimal(1000))))
+								);
+							
+							recipientWalletBalance.setAvailableBalance(
+									recipientWalletBalance.getAvailableBalance().add(amount)
+								);
+							
+							currWalletBalance = new EWalletBalanceServiceImpl(dataSource).updateWalletBalance(currWalletBalance);
+							recipientWalletBalance = new EWalletBalanceServiceImpl(dataSource).updateWalletBalance(recipientWalletBalance);
+
+							if(currWalletBalance != null && recipientWalletBalance != null) {
+
+								request.getSession().setAttribute("walletBalance", currWalletBalance);
+								
+								isBalanceAdded = true;
+								request.setAttribute("done", "1");
+								request.setAttribute("sendWallet", wallet.getPhoneNumber());
+								request.setAttribute("recipientWallet", recipientWallet.getPhoneNumber());
+								request.setAttribute("transactionReference", transactionReference);
+								request.setAttribute("created_at", new Timestamp(System.currentTimeMillis()));
+							}
+						}
+					}
+				}
+			}
+		}
+		
+		if(!isBalanceAdded) {
+			request.setAttribute("error", "err.payment.failed");
+			if(errors.isEmpty())
+			{
+				request.setAttribute("errors", errors);
+			}
+
+		}
+		
+		 try {
+			request.setAttribute("recipientPhoneVal", recipientPhone);
+			request.setAttribute("pinVal", pin);
+			request.setAttribute("amountVal", amount);
+			request.setAttribute("feesVal", amount.divide(new BigDecimal(1000)));
+			request.setAttribute("noteVal", note);
+	        request.getRequestDispatcher("send-money.jsp" + LanguageUtil.langQuery(request)).forward(request, response);
+	    } catch (ServletException | IOException e) {
+	        e.printStackTrace();
+	    }
+	}
+
+	private void deposit(HttpServletRequest request, HttpServletResponse response) {
+		 try {
+		        long atmId      = Long.parseLong(request.getParameter("atmId"));
+		        String phone    = request.getParameter("phone");       
+		        String code     = request.getParameter("code");       
+		        BigDecimal amount = new BigDecimal(request.getParameter("amount"));
+
+		        boolean isDone = false;
+		        Wallet wallet = new EWalletUserServiceImpl(dataSource).getUserWalletByPhoneNumber(phone);
+		        if(wallet!=null)
+		        {
+		        	TransactionCode transactionCode = new TransactionCodeServiceImpl(dataSource).getValidTransactionCodeByWalletIdAndCode(wallet.getWalletId());
+		        	if(transactionCode != null && transactionCode.getCode().equals(code) && transactionCode.getAmount().equals(amount)) {
+		        		
+		        		Account accountFrom = new AccountServiceImpl(dataSource).getAccountByRefereceIdAndTypeId(atmId, 3);
+						if(accountFrom != null) {
+							Account accountTo = new AccountServiceImpl(dataSource).getAccountByRefereceIdAndTypeId(wallet.getWalletId(), 1);
+							if(accountTo != null) {
+								String transactionReference = "TX-" + TransactionUtil.generateTransactionCode();
+								Transaction transaction = new Transaction(
+									accountFrom.getAccountId(),
+									accountTo.getAccountId(),
+									1L,
+									2L,
+									amount,
+									new BigDecimal(0),
+									transactionReference,
+									""
+										);
+								boolean isAdded = transactionService.addTransaction(transaction);
+								if(isAdded) {
+									WalletBalance currentBalance = new EWalletBalanceServiceImpl(dataSource).getWalletBalanceByWalletId(wallet.getWalletId()); 
+									if(currentBalance != null) {
+
+										currentBalance.setAvailableBalance(
+											    amount.add(currentBalance.getAvailableBalance())
+											);
+										WalletBalance newBalance = new EWalletBalanceServiceImpl(dataSource).updateWalletBalance(currentBalance);
+										if(newBalance != null) {
+											isDone = true;	
+											transactionCode.setIsUsed(1);
+											transactionCode.setIsExpire(1);
+											new TransactionCodeServiceImpl(dataSource).updateTransactionCodeByWalletIdAndCode(transactionCode);
+											 response.setContentType("application/json;charset=UTF-8");
+										     response.getWriter().write("{\"ok\":true,\"amount\":"+amount +",\"ref\":\"" + transactionReference +"\"}");
+										}
+									}
+								}
+							}
+						}
+		        		
+		        	}
+		        }
+		        if(!isDone)
+		            throw new Exception("Invalid Phone Number or code");
+		    } catch (Exception e) {
+		        e.printStackTrace();
+		        response.setContentType("application/json;charset=UTF-8");
+		        try {
+					response.getWriter().write("{\"ok\":false,\"error\":\"err.atm.invalid_code\"}");
+				} catch (IOException e1) {
+					// TODO Auto-generated catch block
+					e1.printStackTrace();
+				}
+		    }		
+	}
+
+	private void withdraw(HttpServletRequest request, HttpServletResponse response) {
+		try {
+	        long atmId      = Long.parseLong(request.getParameter("atmId"));
+	        String phone    = request.getParameter("phone");       
+	        String code     = request.getParameter("code");       
+	        BigDecimal amount = new BigDecimal(request.getParameter("amount"));
+
+	        boolean isDone = false;
+	        Wallet wallet = new EWalletUserServiceImpl(dataSource).getUserWalletByPhoneNumber(phone);
+	        if(wallet!=null)
+	        {
+	        	TransactionCode transactionCode = new TransactionCodeServiceImpl(dataSource).getValidTransactionCodeByWalletIdAndCode(wallet.getWalletId());
+	        	if(transactionCode != null && transactionCode.getCode().equals(code) && transactionCode.getAmount().equals(amount)) {
+	        		
+	        		Account accountFrom = new AccountServiceImpl(dataSource).getAccountByRefereceIdAndTypeId(wallet.getWalletId(), 1);
+					if(accountFrom != null) {
+						Account accountTo = new AccountServiceImpl(dataSource).getAccountByRefereceIdAndTypeId(atmId, 3);
+						if(accountTo != null) {
+							
+							WalletBalance currentBalance = new EWalletBalanceServiceImpl(dataSource).getWalletBalanceByWalletId(wallet.getWalletId()); 
+							if(currentBalance != null && currentBalance.getAvailableBalance().compareTo(amount.add(amount.divide(new BigDecimal(100)))) >= 0) {
+								String transactionReference = "TX-" + TransactionUtil.generateTransactionCode();
+								Transaction transaction = new Transaction(
+									accountFrom.getAccountId(),
+									accountTo.getAccountId(),
+									2L,
+									2L,
+									amount,
+									amount.divide(new BigDecimal(100)),
+									transactionReference,
+									""
+										);
+								boolean isAdded = transactionService.addTransaction(transaction);
+								if(isAdded) {
+									currentBalance.setAvailableBalance(
+											currentBalance.getAvailableBalance().subtract(amount.add(amount.divide(new BigDecimal(100))))
+										);
+										WalletBalance newBalance = new EWalletBalanceServiceImpl(dataSource).updateWalletBalance(currentBalance);
+										if(newBalance != null) {
+											isDone = true;	
+											transactionCode.setIsUsed(1);
+											transactionCode.setIsExpire(1);
+											new TransactionCodeServiceImpl(dataSource).updateTransactionCodeByWalletIdAndCode(transactionCode);
+											 response.setContentType("application/json;charset=UTF-8");
+										     response.getWriter().write("{\"ok\":true,\"amount\":"+ amount +",\"ref\":\"" + transactionReference +"\"}");
+										}
+									}
+							}
+						}
+					}
+	        		
+	        	}
+	        }
+	        if(!isDone)
+	            throw new Exception("Invalid Phone Number or code");
+	    } catch (Exception e) {
+	        e.printStackTrace();
+	        response.setContentType("application/json;charset=UTF-8");
+	        try {
+				response.getWriter().write("{\"ok\":false,\"error\":\"err.atm.invalid_code\"}");
+			} catch (IOException e1) {
+				e1.printStackTrace();
+			}
+	    }		
+	}
+
+
+	private void allTtransaction(HttpServletRequest request, HttpServletResponse response) {
+		Wallet wallet = (Wallet) request.getSession().getAttribute("wallet");
+		Account walletAccount = new AccountServiceImpl(dataSource).getAccountByRefereceIdAndTypeId(wallet.getWalletId(), 1);
+		if(wallet != null && walletAccount != null) {
+			List<Transaction> transactions = transactionService.getAllTransactions(walletAccount.getAccountId());
+			List<Map.Entry<String, String>> toOrFromNames = new ArrayList<Map.Entry<String, String>>();
+			for(Transaction transaction : transactions) {
+				long accountId = 0;
+				if(transaction.getToAccountId().equals(walletAccount.getAccountId())) {
+					accountId = transaction.getFromAccountId();
+				}else {
+					accountId = transaction.getToAccountId();
+				}
+				String toOrfrom =accountId == transaction.getToAccountId()? "to" : "from";
+				Account otherAccount = new AccountServiceImpl(dataSource).getAccountByAccountId(accountId); 
+				if(otherAccount.getAccountTypeId() == 1) {
+					try {
+						toOrFromNames.add(Map.entry(new EWalletUserServiceImpl(dataSource).getUserWalletById(otherAccount.getReferenceId()).getPhoneNumber(),toOrfrom));
+					} catch (SQLException e) {
+						// TODO Auto-generated catch block
+						e.printStackTrace();
+					}
+				}else if(otherAccount.getAccountTypeId() == 2) {
+					toOrFromNames.add(Map.entry("Card •••• •••• •••• " + new CardServiceImpl(dataSource).getCardByCardId(otherAccount.getReferenceId()).getCardNumber().substring(12),toOrfrom));
+				} else {
+					toOrFromNames.add(Map.entry(new ATMServiceImpl(dataSource).getATMById(otherAccount.getReferenceId()).getAtmName(),toOrfrom));
+				}
+			}
+			
+			request.setAttribute("transactions", transactions);
+			request.setAttribute("toOrFromNames", toOrFromNames);
+	        try {
+				request.getRequestDispatcher("transactions.jsp" + LanguageUtil.langQuery(request)).forward(request, response);
+			} catch (ServletException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			} catch (IOException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+		}
+	}
+	
+
+}

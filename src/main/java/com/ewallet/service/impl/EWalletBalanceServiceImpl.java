@@ -3,6 +3,7 @@ package com.ewallet.service.impl;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
+import java.sql.Timestamp;
 
 import javax.sql.DataSource;
 
@@ -35,7 +36,18 @@ public class EWalletBalanceServiceImpl implements EWalletBalanceService {
 
 	@Override
 	public WalletBalance updateWalletBalance(WalletBalance walletBalance) {
-		// TODO Auto-generated method stub
+		String query = "Update wallet_balances set available_balance = ?, held_balance = ?, updated_at = ? Where wallet_id = ?";
+		try(Connection connection = dataSource.getConnection();
+				PreparedStatement preparedStatement = connection.prepareStatement(query)){
+			preparedStatement.setBigDecimal(1, walletBalance.getAvailableBalance());
+			preparedStatement.setBigDecimal(2, walletBalance.getHeldBalance());
+			preparedStatement.setTimestamp(3, new Timestamp(System.currentTimeMillis()));
+			preparedStatement.setLong(4, walletBalance.getWalletId());
+			if(preparedStatement.executeUpdate() > 0)
+				return getWalletBalanceByWalletId(walletBalance.getWalletId());
+		}catch(SQLException e) {
+			throw new RuntimeException(e);
+		}
 		return null;
 	}
 

@@ -9,44 +9,43 @@ public class TransactionCode {
     private Long codeId;
     private Long walletId;
     private String code;
-    private Long transactionTypeId;
     private BigDecimal amount;
     private Timestamp createdAt;
     private Timestamp expiresAt;
     private Integer attempts;
     private Integer isUsed;
+    private Integer isExpire;
+
 
     public TransactionCode() {
     }
 
     // Insert Constructor
     public TransactionCode(Long walletId, String code,
-                           Long transactionTypeId,
                            BigDecimal amount) {
         this.walletId = walletId;
         this.code = code;
-        this.transactionTypeId = transactionTypeId;
         this.amount = amount;
     }
 
     // Full Constructor
     public TransactionCode(Long codeId, Long walletId,
-                           String code, Long transactionTypeId,
-                           BigDecimal amount,
+                           String code, BigDecimal amount,
                            Timestamp createdAt,
                            Timestamp expiresAt,
                            Integer attempts,
-                           Integer isUsed) {
+                           Integer isUsed,
+                           Integer isExpire) {
 
         this.codeId = codeId;
         this.walletId = walletId;
         this.code = code;
-        this.transactionTypeId = transactionTypeId;
         this.amount = amount;
         this.createdAt = createdAt;
         this.expiresAt = expiresAt;
         this.attempts = attempts;
         this.isUsed = isUsed;
+        this.isExpire = isExpire;
     }
 
     public Long getCodeId() {
@@ -71,14 +70,6 @@ public class TransactionCode {
 
     public void setCode(String code) {
         this.code = code;
-    }
-
-    public Long getTransactionTypeId() {
-        return transactionTypeId;
-    }
-
-    public void setTransactionTypeId(Long transactionTypeId) {
-        this.transactionTypeId = transactionTypeId;
     }
 
     public BigDecimal getAmount() {
@@ -120,6 +111,14 @@ public class TransactionCode {
     public void setIsUsed(Integer isUsed) {
         this.isUsed = isUsed;
     }
+    
+    public Integer getIsExpire() {
+        return isExpire;
+    }
+
+    public void setIsExpire(Integer isExpire) {
+        this.isExpire = isExpire;
+    }
 
     @Override
     public String toString() {
@@ -127,12 +126,12 @@ public class TransactionCode {
                 "codeId=" + codeId +
                 ", walletId=" + walletId +
                 ", code='" + code + '\'' +
-                ", transactionTypeId=" + transactionTypeId +
                 ", amount=" + amount +
                 ", createdAt=" + createdAt +
                 ", expiresAt=" + expiresAt +
                 ", attempts=" + attempts +
                 ", isUsed=" + isUsed +
+                ", isExpire=" + isExpire +
                 '}';
     }
 

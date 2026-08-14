@@ -25,12 +25,3 @@
       {'number':'3778855512349102','name':'Ahmed Mohamed','bank':'QNB AlAhli','label':'','expire':'11/26','cvv':'789','status':0,'tone':'emerald'}
   ] }"/>
 </c:if>
-
-<c:if test="${empty notifications}">
-  <c:set var="notifications" value="${ [
-      {'titleKey':'notif.moneyIn.title','bodyKey':'notif.moneyIn.body','timeKey':'notif.time.10m','read':false,'icon':'bi-arrow-down-left-circle-fill','tone':'success'},
-      {'titleKey':'notif.moneyOut.title','bodyKey':'notif.moneyOut.body','timeKey':'notif.time.2h','read':false,'icon':'bi-arrow-up-right-circle-fill','tone':'danger'},
-      {'titleKey':'notif.security.title','bodyKey':'notif.security.body','timeKey':'notif.time.1d','read':false,'icon':'bi-shield-lock-fill','tone':'violet'},
-      {'titleKey':'notif.otp.title','bodyKey':'notif.otp.body','timeKey':'notif.time.3d','read':true,'icon':'bi-key-fill','tone':'warning'}
-  ] }"/>
-</c:if>

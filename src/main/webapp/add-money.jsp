@@ -29,6 +29,7 @@
     </c:set>
     <%@ include file="WEB-INF/partials/page-head.jsp" %>
 
+    <form id="addMoneyForm" class="validates" action="${appURL}transactionController?action=addMoney" method="post" novalidate>
     <div data-stepper>
       <div class="stepper mb-4">
         <div class="step active" data-step-dot>
@@ -47,7 +48,6 @@
 
       <div class="panel step-panel">
         <div class="panel-body">
-          <form class="validates" novalidate>
             <div class="mb-4">
               <label class="form-label"><fmt:message key="add.card.saved"/></label>
               <%
@@ -120,13 +120,11 @@
                 <fmt:message key="common.continue"/> <i class="bi bi-arrow-left"></i>
               </button>
             </div>
-          </form>
         </div>
       </div>
 
       <div class="panel step-panel d-none">
         <div class="panel-body">
-          <form class="validates" novalidate>
             <div class="mb-4">
               <label class="form-label" for="amount"><fmt:message key="add.amount.title"/> (<fmt:message key="common.currency"/>)</label>
               <div class="amount-input">
@@ -150,7 +148,6 @@
                 <fmt:message key="common.continue"/> <i class="bi bi-arrow-left"></i>
               </button>
             </div>
-          </form>
         </div>
       </div>
 
@@ -162,36 +159,91 @@
             <div class="receipt-row"><span><fmt:message key="cards.cardId"/></span><strong id="ok-number" dir="ltr" data-fill="#add-card-number" data-fill-mask="cc" style="font-family:monospace;letter-spacing:1px">—</strong></div>
             <div class="receipt-row"><span><fmt:message key="cards.holder"/></span><strong id="ok-holder" data-fill="#add-holder">—</strong></div>
             <div class="receipt-row"><span><fmt:message key="common.amount"/></span><strong class="amount-selected" id="ok-amount" data-fill="#amount">—</strong></div>
-            <div class="receipt-row"><span><fmt:message key="common.ref"/></span><strong class="ref-code" id="ok-ref">TX-<span id="ok-ref-num">------</span></strong></div>
+          </div>
+          <div class="mb-4 mt-4 text-center">
+            <label class="form-label" for="pin"><fmt:message key="add.pin.title"/></label>
+            <p class="text-muted mb-3" style="font-size:.9rem"><fmt:message key="add.pin.desc"/></p>
+            <div class="input-group input-group-lg mx-auto" style="max-width:280px">
+              <input type="password" class="form-control text-center" id="pin" name="pin"
+                     placeholder="••••••" value="${fn:escapeXml(param.pin)}"
+                     data-pin-input inputmode="numeric" dir="ltr" autocomplete="off" required>
+              <button class="input-group-text" type="button" data-toggle-pin="pin" tabindex="-1">
+                <i class="bi bi-eye"></i>
+              </button>
+            </div>
           </div>
           <div class="d-flex justify-content-between align-items-center mt-4">
             <button type="button" class="btn btn-outline-line btn-lg" data-prev>
               <i class="bi bi-arrow-right"></i> <fmt:message key="common.back"/>
             </button>
-            <button type="button" class="btn btn-primary btn-lg" data-finish>
+            <button type="submit" class="btn btn-primary btn-lg" data-finish>
               <i class="bi bi-check-lg"></i> <fmt:message key="common.confirm"/>
             </button>
           </div>
         </div>
       </div>
 
-      <div class="panel step-panel d-none" data-done>
-        <div class="panel-body">
-          <div class="success-wrap">
-            <div class="success-icon"><i class="bi bi-wallet2"></i></div>
-            <h2 class="fw-bold mb-2"><fmt:message key="add.success.title"/></h2>
-            <p class="text-muted"><fmt:message key="add.success.desc"/></p>
-            <div class="d-flex justify-content-center gap-2 flex-wrap">
-              <a href="${appURL}cardController?action=getAllCards&redirect=add-money" class="btn btn-primary btn-lg"><fmt:message key="common.new"/> <fmt:message key="add.title"/></a>
-              <a href="${appURL}home.jsp${qLang}" class="btn btn-outline-line btn-lg"><fmt:message key="nav.dashboard"/></a>
-            </div>
+    </div>
+    </form>
+
+    <div class="panel shadow-sm d-none" data-done>
+      <div class="panel-body">
+        <div class="success-wrap">
+          <c:choose>
+            <c:when test="${not empty error}">
+              <div class="success-icon" style="background:var(--danger)"><i class="bi bi-x-lg"></i></div>
+              <h2 class="fw-bold mb-2"><fmt:message key="add.fail.title"/></h2>
+              <p class="text-muted"><fmt:message key="add.fail.desc"/></p>
+              <div class="form-alert" style="max-width:440px;margin:0 auto 1rem;text-align:start" role="alert">
+                <i class="bi bi-exclamation-circle-fill"></i>
+                <span><fmt:message key="${error}"/></span>
+              </div>
+            </c:when>
+            <c:otherwise>
+              <div class="success-icon"><i class="bi bi-wallet2"></i></div>
+              <h2 class="fw-bold mb-2"><fmt:message key="add.success.title"/></h2>
+              <p class="text-muted"><fmt:message key="add.success.desc"/></p>
+              <c:if test="${not empty success}">
+                <div class="form-alert" style="max-width:440px;margin:0 auto 1rem;text-align:start" role="alert">
+                  <i class="bi bi-check-circle-fill"></i>
+                  <span><fmt:message key="add.success.done"/></span>
+                </div>
+              </c:if>
+            </c:otherwise>
+          </c:choose>
+          <div class="receipt">
+            <div class="receipt-row"><span><fmt:message key="add.method"/></span><strong><fmt:message key="add.method.card"/></strong></div>
+            <div class="receipt-row"><span><fmt:message key="cards.cardId"/></span><strong dir="ltr" style="font-family:monospace;letter-spacing:1px"><c:out value="${cardNumberTransaction}" default="—"/></strong></div>
+            <div class="receipt-row"><span><fmt:message key="common.amount"/></span><strong class="amount-selected" data-fill="#amount">—</strong></div>
+            <div class="receipt-row"><span><fmt:message key="common.ref"/></span><strong class="ref-code"><%= request.getAttribute("txRef") != null? request.getAttribute("txRef") : request.getAttribute("transactionReference") != null? request.getAttribute("transactionReference") : "—" %></strong></div>
+            <div class="receipt-row"><span><fmt:message key="common.date"/></span><strong style="direction:ltr"><%= request.getAttribute("txDate") != null? request.getAttribute("txDate") : request.getAttribute("created_at") != null? request.getAttribute("created_at") : "—" %></strong></div>
+          </div>
+          <div class="d-flex justify-content-center gap-2 flex-wrap">
+            <a href="${appURL}cardController?action=getAllCards&redirect=add-money" class="btn btn-primary btn-lg"><fmt:message key="common.new"/> <fmt:message key="add.title"/></a>
+            <a href="${appURL}home.jsp${qLang}" class="btn btn-outline-line btn-lg"><fmt:message key="nav.dashboard"/></a>
           </div>
         </div>
       </div>
-
     </div>
 
   </div>
 </main>
 
+
+
 <%@ include file="WEB-INF/partials/footer.jsp" %>
+
+<%
+	String doneFlag = (String) request.getAttribute("done");
+	String errFlag = (String) request.getAttribute("error");
+	if ((doneFlag != null && !doneFlag.isEmpty()) || (errFlag != null && !errFlag.isEmpty())) {
+%>
+<script>
+  document.getElementById("addMoneyForm").classList.add("d-none");
+  var donePanel = document.querySelector("[data-done]");
+  if (donePanel) donePanel.classList.remove("d-none");
+  window.scrollTo({ top: 0, behavior: "smooth" });
+</script>
+<%
+	}
+%>

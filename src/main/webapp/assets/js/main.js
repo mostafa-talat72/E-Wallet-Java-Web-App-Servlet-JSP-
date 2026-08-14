@@ -243,9 +243,21 @@
       if (chip.dataset.started) return;
       chip.dataset.started = "1";
       var seconds = parseInt(chip.getAttribute("data-countdown"), 10) || 600;
+      var until = chip.getAttribute("data-countdown-until");
+      if (until) {
+        var tUntil = new Date(until).getTime();
+        if (!isNaN(tUntil)) {
+          seconds = Math.max(0, Math.floor((tUntil - Date.now()) / 1000));
+        }
+      }
+      var doneUrl = chip.getAttribute("data-countdown-url");
       var resend = document.querySelector("[data-resend]");
       function tick() {
         if (seconds <= 0) {
+          if (doneUrl) {
+            window.location.href = doneUrl;
+            return;
+          }
           chip.style.display = "none";
           if (resend) resend.style.display = "block";
           return;
@@ -261,8 +273,51 @@
     });
   }
 
+  function initFeeCalc(stepper) {
+    stepper.querySelectorAll("[data-fee-calc]").forEach(function (el) {
+      var source = document.querySelector(el.getAttribute("data-fee-source") || "#amount");
+      var target = el.getAttribute("data-fee-target") ? document.querySelector(el.getAttribute("data-fee-target")) : null;
+      var rate = parseFloat(el.getAttribute("data-fee-rate")) || 0.001;
+      var currency = el.getAttribute("data-fee-cur") || "";
+      function update() {
+        var amount = parseFloat(source ? source.value : 0);
+        if (!(amount > 0)) {
+          el.textContent = "0.00 " + currency;
+          if (target) target.textContent = "—";
+          return;
+        }
+        var fee = amount * rate;
+        el.textContent = fee.toFixed(3) + " " + currency;
+        if (target) target.textContent = (amount + fee).toFixed(3) + " " + currency;
+      }
+      update();
+      if (source) source.addEventListener("input", update);
+      stepper.querySelectorAll("[data-amount-chips]").forEach(function (row) {
+        row.addEventListener("click", function () { update(); });
+      });
+    });
+  }
+
   function fillPreviews(stepper) {
     stepper.querySelectorAll("[data-fill]").forEach(function (el) {
+      var input = document.querySelector(el.getAttribute("data-fill"));
+      if (input && input.value) {
+        if (el.getAttribute("data-fill-mask") === "cc") {
+          var n = input.value.replace(/\D/g, "");
+          el.textContent = n.length >= 4 ? "•••• •••• •••• " + n.slice(-4) : "—";
+        } else {
+          el.textContent = input.value;
+          if (input.type === "number") el.classList.add("amount-selected");
+        }
+      } else {
+        el.textContent = "—";
+        el.classList.remove("amount-selected");
+      }
+    });
+  }
+
+  function fillDonePanel(panel) {
+    panel.querySelectorAll("[data-fill]").forEach(function (el) {
       var input = document.querySelector(el.getAttribute("data-fill"));
       if (input && input.value) {
         if (el.getAttribute("data-fill-mask") === "cc") {
@@ -303,14 +358,11 @@
           APP.toast(APPMSG.selectCard, "error");
           return;
         }
-        var form = panel && panel.querySelector(".validates");
-        if (form) {
-          if (!form.checkValidity()) {
-            form.reportValidity();
-            var bad = form.querySelector(":invalid");
-            APP.toast((bad ? ("Missing: " + (bad.name || bad.id)) : APPMSG.invalid), "error");
-            return;
-          }
+        var bad = panel && panel.querySelector("input:invalid, select:invalid, textarea:invalid");
+        if (bad) {
+          if (bad.reportValidity) bad.reportValidity();
+          APP.toast((bad.name || bad.id ? ("Missing: " + (bad.name || bad.id)) : APPMSG.invalid), "error");
+          return;
         }
         var otpBox = panel && panel.querySelector(".otp-wrap .otp-row:not(.card-parts) [data-otp]");
         if (otpBox) {
@@ -320,10 +372,6 @@
           boxes.forEach(function (b) { code += b.value; });
           if (code.length < boxes.length) {
             APP.toast(APPMSG.invalid, "error");
-            return;
-          }
-          if (code !== "123456") {
-            APP.toast(APPMSG.wrongPin, "error");
             return;
           }
         }
@@ -338,7 +386,12 @@
         });
       });
       stepper.querySelectorAll("[data-finish]").forEach(function (btn) {
-        btn.addEventListener("click", function () {
+        btn.addEventListener("click", function (e) {
+          var form = btn.closest("form");
+          if (form && form.getAttribute("action")) {
+            return;
+          }
+          e.preventDefault();
           var ref = document.getElementById("ok-ref-num");
           if (ref) ref.textContent = Math.floor(100000 + Math.random() * 900000);
           fillPreviews(stepper);
@@ -348,6 +401,7 @@
       stepper.querySelectorAll("[data-prev]").forEach(function (btn) {
         btn.addEventListener("click", function () { show(current - 1); });
       });
+      initFeeCalc(stepper);
       show(0);
     });
   }
@@ -357,7 +411,9 @@
     function setLocked(locked) {
       fields.forEach(function (sel) {
         document.querySelectorAll(sel).forEach(function (el) {
-          el.disabled = locked;
+          if (el.type !== "hidden") {
+            el.disabled = locked;
+          }
           el.classList.toggle("card-fields-locked", locked);
         });
       });
@@ -771,6 +827,7 @@
     initExpirySelects();
     initSavedCards();
     initOtps();
+    initCountdown(document);
     initSteps();
     initQuickAmounts();
     initTxFilters();
@@ -784,5 +841,8 @@
     initOtpVerify();
     initCardModals();
     initProfileDelete();
+    APP.sel("[data-done]").forEach(function (p) {
+      if (!p.classList.contains("d-none")) fillDonePanel(p);
+    });
   });
 })();

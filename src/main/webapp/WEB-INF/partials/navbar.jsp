@@ -13,7 +13,7 @@
   </div>
   <nav class="sidebar-nav">
     <div class="nav-section-label"><fmt:message key="nav.main"/></div>
-    <a href="${appURL}home.jsp${qLang}" class="nav-link ${activeMenu == 'home' ? 'active' : ''}">
+    <a href="/E-Wallet/walletController?action=login" class="nav-link ${activeMenu == 'home' ? 'active' : ''}">
       <i class="bi bi-grid-1x2-fill"></i><span><fmt:message key="nav.dashboard"/></span>
     </a>
     <a href="${appURL}send-money.jsp${qLang}" class="nav-link ${activeMenu == 'send' ? 'active' : ''}">
@@ -22,26 +22,22 @@
     <a href="/E-Wallet/cardController?action=getAllCards&redirect=add-money" class="nav-link ${activeMenu == 'add' ? 'active' : ''}">
       <i class="bi bi-plus-circle-fill"></i><span><fmt:message key="nav.add"/></span>
     </a>
-    <a href="${appURL}atmotp.jsp${qLang}" class="nav-link ${activeMenu == 'withdraw' ? 'active' : ''}">
+    <a href="${appURL}atmotp.jsp${qLang}"  class="nav-link ${activeMenu == 'withdraw' ? 'active' : ''}">
       <i class="bi bi-cash-stack"></i><span><fmt:message key="nav.withdraw"/></span>
     </a>
     <div class="nav-section-label"><fmt:message key="nav.account"/></div>
     <a href="/E-Wallet/cardController?action=getAllCards&redirect=cards" class="nav-link ${activeMenu == 'cards' ? 'active' : ''}">
       <i class="bi bi-credit-card-2-front-fill"></i><span><fmt:message key="nav.cards"/></span>
     </a>
-    <a href="${appURL}transactions.jsp${qLang}" class="nav-link ${activeMenu == 'transactions' ? 'active' : ''}">
+    <a href="/E-Wallet/transactionController?action=allTtransaction" class="nav-link ${activeMenu == 'transactions' ? 'active' : ''}">
       <i class="bi bi-arrow-left-right"></i><span><fmt:message key="nav.transactions"/></span>
-    </a>
-    <a href="${appURL}notifications.jsp${qLang}" class="nav-link ${activeMenu == 'notifications' ? 'active' : ''}">
-      <i class="bi bi-bell-fill"></i><span><fmt:message key="nav.notifications"/></span>
-      <span class="nav-badge">3</span>
     </a>
   </nav>
   <div class="sidebar-footer">
     <a href="${appURL}profile.jsp${qLang}" class="nav-link ${activeMenu == 'profile' ? 'active' : ''}">
       <i class="bi bi-person-fill"></i><span><fmt:message key="nav.profile"/></span>
     </a>
-    <a href="${appURL}login.jsp" class="nav-link nav-logout">
+    <a href="/E-Wallet/walletController?action=logout" class="nav-link nav-logout">
       <i class="bi bi-box-arrow-right"></i><span><fmt:message key="nav.logout"/></span>
     </a>
   </div>
@@ -63,10 +59,6 @@
       <a href="${appURL}${pageName}.jsp?lang=ar" class="${lang == 'ar' ? 'active' : ''}">عربي</a>
       <a href="${appURL}${pageName}.jsp?lang=en" class="${lang == 'en' ? 'active' : ''}">EN</a>
     </div>
-    <a href="${appURL}notifications.jsp${qLang}" class="btn-icon topbar-notif">
-      <i class="bi bi-bell"></i>
-      <span class="notif-dot"></span>
-    </a>
     <div class="dropdown">
       <button class="user-chip dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
         <span class="user-avatar">${sessionScope.wallet.fullName.charAt(0)}</span>
@@ -78,7 +70,7 @@
       <ul class="dropdown-menu dropdown-menu-end">
         <li><a class="dropdown-item" href="${appURL}profile.jsp${qLang}"><i class="bi bi-person me-2"></i><fmt:message key="nav.profile"/></a></li>
         <li><hr class="dropdown-divider"></li>
-        <li><a class="dropdown-item text-danger" href="${appURL}login.jsp"><i class="bi bi-box-arrow-right me-2"></i><fmt:message key="nav.logout"/></a></li>
+        <li><a class="dropdown-item text-danger" href="/E-Wallet/walletController?action=logout"><i class="bi bi-box-arrow-right me-2"></i><fmt:message key="nav.logout"/></a></li>
       </ul>
     </div>
   </div>
