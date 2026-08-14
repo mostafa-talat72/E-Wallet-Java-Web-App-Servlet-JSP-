@@ -142,7 +142,7 @@ sql/
 | `transaction_types` | 1 = Deposit, 2 = Withdraw, 3 = Transfer | `transaction_type_id`, `name` |
 | `transaction_status` | 1 = Pending, 2 = Success, 3 = Failed, 4 = Cancelled, 5 = Expired | `transaction_status_id`, `name` |
 | `transaction_codes` | One-time ATM OTP codes | `code_id`, `wallet_id`, `code` (6 digits, unique per wallet), `amount`, `created_at`, `expires_at`, `attempts`, `is_used`, `is_expire` |
-| `activation_codes` | One-time 6-digit activation codes | `code_id`, `wallet_id`, `code` (6 digits, unique per wallet), `created_at`, `expires_at`, `attempts`, `is_used`, `is_expire` |
+| `activation_codes` | One-time 6-digit verification codes (wallet activation + PIN reset) | `code_id`, `wallet_id`, `code` (6 digits, unique per wallet), **`purpose`** (`ACTIVATION` / `RESET`), `created_at`, `expires_at`, `attempts`, `is_used`, `is_expire` |
 | `atms` | Registered ATM machines | `atm_id`, `atm_name`, `atm_location`, `mapX`, `mapY`, `status` |
 
 ### Why an `accounts` layer?
@@ -203,6 +203,15 @@ Insufficient balance returns the i18n error `err.amount.insufficient` (transfer)
   forever.
 - `action=resendActivation` consumes the old valid code and issues + sends a
   fresh one (fresh attempts counter).
+- **Forgot PIN** mirrors the activation flow: `forgot-pin.jsp` asks for the
+  registered phone number, the controller issues a 6-digit reset code (same
+  `activation_codes` table with `purpose = 'RESET'`, same 10-minute expiry and
+  attempts rules) and sends it on WhatsApp with the same on-screen fallback;
+  `forgot-pin-code.jsp` verifies the code and rotates the PIN via
+  `updateUserWalletPin` (fresh salt + SHA-256 hash). Expiry is again decided by
+  the DB clock. The two flows share the table but are scoped by the `purpose`
+  column — issuing a reset code never touches a pending activation code, and
+  vice versa.
 - Login of an inactive wallet redirects to `activate.jsp` instead of opening a
   session.
 
@@ -236,6 +245,8 @@ All controllers are mapped with `@WebServlet` and use `doGet` → `doPost`.
 | `login` | POST | Verifies PIN (salted hash), stores `wallet` + `walletBalance` in session (inactive wallets are redirected to activation) |
 | `activate` | POST | Verifies the 6-digit WhatsApp code, unlocks the wallet (status 1) and opens the session |
 | `resendActivation` | GET | Consumes the old code and issues + sends a fresh one |
+| `forgotPin` | POST/GET | Starts the PIN reset: verifies the phone, issues + sends a WhatsApp reset code (GET without `phone` resends using the stored number) |
+| `resetPin` | POST | Verifies the WhatsApp reset code, consumes it and stores a new salted PIN hash, then redirects to login |
 | `updateUserWallet` | POST | Update full name |
 | `updateUserWalletPin` | POST | Verify current PIN, generate new salt+hash via service |
 | `deleteUserWallet` | POST | Cascade-delete wallet (atomic) and invalidate session |
@@ -280,6 +291,8 @@ All controllers are mapped with `@WebServlet` and use `doGet` → `doPost`.
 | `login.jsp` | public | Login form → `walletController?action=login` |
 | `register.jsp` | public | Signup form → `walletController?action=signup` |
 | `activate.jsp` | public | Enter the 6-digit WhatsApp code → `walletController?action=activate`; resend via `action=resendActivation` |
+| `forgot-pin.jsp` | public | Forgot PIN — step 1: enter the registered phone number → `walletController?action=forgotPin` |
+| `forgot-pin-code.jsp` | public | Forgot PIN — step 2: enter the WhatsApp reset code + new PIN → `walletController?action=resetPin`; resend via `action=forgotPin` |
 | `home.jsp` | logged in | Dashboard: balance, quick actions, mini chart (demo data) |
 | `profile.jsp` | logged in | Update name, change PIN, delete account → `walletController` |
 | `add-money.jsp` | logged in | Deposit from a saved card → `transactionController?action=addMoney` |

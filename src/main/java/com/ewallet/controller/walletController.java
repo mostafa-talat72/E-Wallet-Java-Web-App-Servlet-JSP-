@@ -44,6 +44,8 @@ import com.ewallet.util.UserWalletValidator;
  *  - login               : authenticates an existing wallet user
  *  - activate            : verifies the WhatsApp activation code and unlocks the wallet
  *  - resendActivation    : issues and sends a fresh activation code
+ *  - forgotPin           : requests a PIN reset — verifies the phone, issues + sends a WhatsApp code
+ *  - resetPin            : verifies the WhatsApp reset code and stores a new PIN
  *  - updateUserWallet    : updates the wallet user's full name
  *  - updateUserWalletPin : changes the wallet user's 6-digit PIN
  *  - deleteUserWallet    : permanently deletes a wallet user account
@@ -55,6 +57,8 @@ import com.ewallet.util.UserWalletValidator;
  *  http://localhost:8080/E-Wallet/walletController?action=login
  *  http://localhost:8080/E-Wallet/walletController?action=activate
  *  http://localhost:8080/E-Wallet/walletController?action=resendActivation
+ *  http://localhost:8080/E-Wallet/walletController?action=forgotPin
+ *  http://localhost:8080/E-Wallet/walletController?action=resetPin
  *  http://localhost:8080/E-Wallet/walletController?action=updateUserWallet
  *  http://localhost:8080/E-Wallet/walletController?action=updateUserWalletPin
  *  http://localhost:8080/E-Wallet/walletController?action=deleteUserWallet
@@ -113,6 +117,12 @@ public class walletController extends HttpServlet {
 				break;
 			case "resendActivation":
 				resendActivation(request, response);
+				break;
+			case "forgotPin":
+				forgotPin(request, response);
+				break;
+			case "resetPin":
+				resetPin(request, response);
 				break;
 			case "updateUserWallet":
 				updateUserWallet(request, response);
@@ -307,7 +317,7 @@ public class walletController extends HttpServlet {
 			errors.put("codeErr", "err.activation.invalidFormat");
 		} else {
 			try {
-				ActivationCode stored = activationCodeService.getValidActivationCodeByWalletId(pendingWalletId);
+				ActivationCode stored = activationCodeService.getValidActivationCodeByWalletIdAndPurpose(pendingWalletId, "ACTIVATION");
 				if (stored == null) {
 					// No usable code: none was created yet, or its 10-minute window
 					// has passed (expiry is decided by the DB clock in the query).
@@ -376,8 +386,8 @@ public class walletController extends HttpServlet {
 			return;
 		}
 		try {
-			// Invalidate any still-usable code so only the new one can be entered.
-			ActivationCode existing = activationCodeService.getValidActivationCodeByWalletId(pendingWalletId);
+			// Invalidate any still-usable activation code so only the new one can be entered.
+			ActivationCode existing = activationCodeService.getValidActivationCodeByWalletIdAndPurpose(pendingWalletId, "ACTIVATION");
 			if (existing != null) {
 				existing.setAttempts(3);
 				existing.setIsUsed(1);
@@ -412,6 +422,153 @@ public class walletController extends HttpServlet {
 			}
 		} catch (ServletException | IOException e) {
 			e.printStackTrace();
+		}
+	}
+
+	/**
+	 * Handles the "forgotPin" action: starts the PIN-reset flow.
+	 * Verifies the submitted phone number, resolves the wallet, consumes any
+	 * still-valid code and issues + sends a fresh 6-digit WhatsApp code exactly
+	 * like the activation flow, then moves the user to the code page. Calling it
+	 * again without a "phone" parameter (the resend link) reuses the phone that
+	 * was stored in the session during the first request.
+	 */
+	private void forgotPin(HttpServletRequest request, HttpServletResponse response) {
+		String phoneNumber = request.getParameter("phone");
+		String sessionPhone = (String) request.getSession().getAttribute("pendingResetPhone");
+		boolean resend = phoneNumber == null && sessionPhone != null;
+		if (resend) {
+			// Resend: reuse the phone number stored when the flow was started.
+			phoneNumber = sessionPhone;
+		}
+
+		Map<String, String> errors = UserWalletValidator.validateForResetRequest(phoneNumber);
+
+		if (errors.isEmpty()) {
+			try {
+				Wallet wallet = eWalletUserService.getUserWalletByPhoneNumber(phoneNumber);
+				if (wallet == null) {
+					errors.put("phoneNumber", "err.phone.notFound");
+				} else {
+					// Invalidate any still-usable RESET code so only the new one can be entered.
+					// (An ACTIVATION code, if any, is left untouched.)
+					ActivationCode existing = activationCodeService.getValidActivationCodeByWalletIdAndPurpose(wallet.getWalletId(), "RESET");
+					if (existing != null) {
+						existing.setAttempts(3);
+						existing.setIsUsed(1);
+						existing.setIsExpire(1);
+						activationCodeService.updateActivationCodeByWalletIdAndCode(existing);
+					}
+					ActivationCode resetCode = new ActivationCode(wallet.getWalletId(), TransactionUtil.generateActivationCode());
+					resetCode.setPurpose("RESET");
+					resetCode = activationCodeService.addActivationCode(resetCode);
+
+					boolean sent = messageService.send(wallet.getPhoneNumber(),
+							"Your E-Wallet PIN reset code is " + resetCode.getCode());
+					request.getSession().setAttribute("pendingResetWalletId", wallet.getWalletId());
+					request.getSession().setAttribute("pendingResetPhone", wallet.getPhoneNumber());
+					request.getSession().removeAttribute("resetFallbackCode");
+					if (!sent) {
+						// WhatsApp unreachable: still show the code on the page as a fallback.
+						request.getSession().setAttribute("resetFallbackCode", resetCode.getCode());
+					}
+					request.setAttribute("resent", resend);
+					request.getRequestDispatcher("forgot-pin-code.jsp" + LanguageUtil.langQuery(request)).forward(request, response);
+					return;
+				}
+			} catch (SQLException e) {
+				errors = UserWalletValidator.parseSqlException(e);
+			} catch (ServletException | IOException e) {
+				e.printStackTrace();
+			}
+		}
+
+		if (!errors.isEmpty()) {
+			// Re-render the request form with the validation errors.
+			request.setAttribute("errors", errors);
+			request.setAttribute("phoneNumberErr", phoneNumber);
+			try {
+				request.getRequestDispatcher("forgot-pin.jsp" + LanguageUtil.langQuery(request)).forward(request, response);
+			} catch (ServletException | IOException e) {
+				e.printStackTrace();
+			}
+		}
+	}
+
+	/**
+	 * Handles the "resetPin" action: finishes the PIN-reset flow.
+	 * Verifies the 6-digit WhatsApp reset code the same way the activation flow
+	 * verifies its code (single still-valid row, attempts counter, expiry decided
+	 * by the DB clock). On success the code is consumed and the new PIN is stored
+	 * via {@link EWalletUserService#updateUserWalletPin(Wallet, String)}; the user
+	 * is then sent back to the login page.
+	 */
+	private void resetPin(HttpServletRequest request, HttpServletResponse response) {
+		String code = request.getParameter("code");
+		String newPin = request.getParameter("newPin");
+		String newPinConfirm = request.getParameter("newPin2");
+		Long pendingResetWalletId = (Long) request.getSession().getAttribute("pendingResetWalletId");
+		Map<String, String> errors = new HashMap<>();
+
+		if (pendingResetWalletId == null) {
+			// No pending reset in this session (page opened directly).
+			errors.put("resetErr", "err.reset.invalidSession");
+		} else if (code == null || !code.matches("\\d{6}")) {
+			errors.put("codeErr", "err.reset.invalidFormat");
+		} else {
+			errors.putAll(UserWalletValidator.validateForUpdatePin(newPin, newPinConfirm));
+			if (errors.isEmpty()) {
+				try {
+					ActivationCode stored = activationCodeService.getValidActivationCodeByWalletIdAndPurpose(pendingResetWalletId, "RESET");
+					if (stored == null) {
+						// No usable code: none was issued, or its 10-minute window has passed.
+						errors.put("codeErr", "err.reset.expired");
+					} else if (stored.getAttempts() >= 3) {
+						errors.put("codeErr", "err.reset.locked");
+					} else if (!stored.getCode().equals(code)) {
+						// Wrong code: increment the attempts counter and fail.
+						stored.setAttempts(stored.getAttempts() + 1);
+						activationCodeService.updateActivationCodeByWalletIdAndCode(stored);
+						errors.put("codeErr", "err.reset.wrong");
+					} else {
+						// Correct code: consume it and rotate the PIN.
+						stored.setAttempts(stored.getAttempts() + 1);
+						stored.setIsUsed(1);
+						stored.setIsExpire(1);
+						activationCodeService.updateActivationCodeByWalletIdAndCode(stored);
+
+						Wallet wallet = eWalletUserService.getUserWalletById(pendingResetWalletId);
+						wallet = eWalletUserService.updateUserWalletPin(wallet, newPin);
+						if (wallet != null) {
+							// Reset complete: clear the pending state and go back to login.
+							request.getSession().removeAttribute("pendingResetWalletId");
+							request.getSession().removeAttribute("pendingResetPhone");
+							request.getSession().removeAttribute("resetFallbackCode");
+							String langSuffix = LanguageUtil.langQuery(request).substring(1);
+							response.sendRedirect("login.jsp?resetSuccess=1&" + langSuffix);
+							return;
+						}
+						errors.put("resetErr", "err.generic");
+					}
+				} catch (SQLException e) {
+					errors = UserWalletValidator.parseSqlException(e);
+				} catch (IOException e) {
+					e.printStackTrace();
+				}
+			}
+		}
+
+		if (!errors.isEmpty()) {
+			// Re-render the code page with the error messages and the typed values.
+			request.setAttribute("errors", errors);
+			request.setAttribute("codeErrVal", code);
+			request.setAttribute("newPinErrVal", newPin);
+			request.setAttribute("newPin2ErrVal", newPinConfirm);
+			try {
+				request.getRequestDispatcher("forgot-pin-code.jsp" + LanguageUtil.langQuery(request)).forward(request, response);
+			} catch (ServletException | IOException e) {
+				e.printStackTrace();
+			}
 		}
 	}
 

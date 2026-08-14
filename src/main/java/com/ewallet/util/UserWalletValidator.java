@@ -72,6 +72,16 @@ public class UserWalletValidator {
 		checkNationalId(nationalId, errors);
 		return errors;
 	}
+
+	/**
+	 * Validates the PIN-reset request form, which asks for the phone number
+	 * only (ownership is then proven by the 6-digit WhatsApp code).
+	 */
+	public static Map<String, String> validateForResetRequest(String phoneNumber) {
+		Map<String, String> errors = new HashMap<>();
+		checkPhoneNumber(phoneNumber, errors);
+		return errors;
+	}
 	
 	// DB constraints mirrored by the checks below (as declared in the schema):
 	// CONSTRAINT CHECK_PHONE_NUMBER_LENGTH CHECK (REGEXP_LIKE(phone_number, '^[0-9]{11}$')),

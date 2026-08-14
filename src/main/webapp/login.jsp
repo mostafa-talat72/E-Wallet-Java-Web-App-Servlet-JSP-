@@ -68,6 +68,14 @@
       </div>
       <p class="auth-subtitle"><fmt:message key="auth.loginSubtitle"/></p>
 
+      <%-- Success banner after a completed PIN reset (redirected from walletController?action=resetPin). --%>
+      <c:if test="${param.resetSuccess == '1'}">
+        <div class="form-alert" role="alert">
+          <i class="bi bi-check-circle-fill"></i>
+          <span><fmt:message key="reset.success"/></span>
+        </div>
+      </c:if>
+
       <%-- Login form: posts phone + PIN to WalletController (action=login). --%>
       <form action="/E-Wallet/walletController?action=login" method="post" novalidate>
         <% 
@@ -106,7 +114,7 @@
           </div>
         </div>
         <div class="d-flex justify-content-end mb-4">
-          <a href="#" class="small fw-bold"><fmt:message key="auth.forgotPin"/></a>
+          <a href="forgot-pin.jsp${qLang}" class="small fw-bold"><fmt:message key="auth.forgotPin"/></a>
         </div>
         <button type="submit" class="btn btn-primary btn-lg w-100">
           <fmt:message key="auth.loginBtn"/> <i class="bi bi-box-arrow-in-end"></i>

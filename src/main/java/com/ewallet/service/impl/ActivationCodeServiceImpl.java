@@ -26,43 +26,59 @@ public class ActivationCodeServiceImpl implements ActivationCodeService {
 
 	/**
 	 * Inserts a newly generated code into "activation_codes", then reloads the
-	 * wallet's latest usable code so the caller receives the row fully populated.
+	 * wallet's latest usable code (of the same purpose) so the caller receives
+	 * the row fully populated.
 	 */
 	@Override
 	public ActivationCode addActivationCode(ActivationCode activationCode) throws SQLException {
-		String query = "INSERT INTO activation_codes (wallet_id, code) VALUES (?, ?) ";
+		String query = "INSERT INTO activation_codes (wallet_id, code, purpose) VALUES (?, ?, ?) ";
 		try (Connection connection = dataSource.getConnection();
 				PreparedStatement preparedStatement = connection.prepareStatement(query)) {
 			preparedStatement.setLong(1, activationCode.getWalletId());
 			preparedStatement.setString(2, activationCode.getCode());
+			preparedStatement.setString(3, activationCode.getPurpose());
 			preparedStatement.execute();
-			return getValidActivationCodeByWalletId(activationCode.getWalletId());
+			return getValidActivationCodeByWalletIdAndPurpose(
+					activationCode.getWalletId(), activationCode.getPurpose());
 		} catch (SQLException e) {
 			throw e;
 		}
 	}
 
 	/**
-	 * Selects the most recent "activation_codes" row of a wallet that is still
-	 * usable (not used, not expired, and with its 10-minute window still open).
-	 * Expiry is decided by the database clock ({@code expires_at > CURRENT_TIMESTAMP})
-	 * on purpose: the DB and the JVM can run on different timezones, so comparing
-	 * the stored timestamp against {@code System.currentTimeMillis()} would be wrong.
-	 * Only the newest usable code is ever returned.
+	 * Selects the most recent "ACTIVATION" code of a wallet that is still
+	 * usable — see {@link #getValidActivationCodeByWalletIdAndPurpose}.
 	 * @return the usable code row, or null when there is none.
 	 */
 	@Override
 	public ActivationCode getValidActivationCodeByWalletId(long walletId) {
-		String query = "SELECT * FROM activation_codes WHERE wallet_id = ? AND is_used = 0 AND is_Expire = 0 AND expires_at > CURRENT_TIMESTAMP ORDER BY created_at DESC";
+		return getValidActivationCodeByWalletIdAndPurpose(walletId, "ACTIVATION");
+	}
+
+	/**
+	 * Selects the most recent "activation_codes" row of a wallet for a specific
+	 * purpose ("ACTIVATION" or "RESET") that is still usable (not used, not
+	 * expired, and with its 10-minute window still open). Expiry is decided by
+	 * the database clock ({@code expires_at > CURRENT_TIMESTAMP}) on purpose:
+	 * the DB and the JVM can run on different timezones, so comparing the stored
+	 * timestamp against {@code System.currentTimeMillis()} would be wrong.
+	 * Only the newest usable code of that purpose is ever returned.
+	 * @return the usable code row, or null when there is none.
+	 */
+	@Override
+	public ActivationCode getValidActivationCodeByWalletIdAndPurpose(long walletId, String purpose) {
+		String query = "SELECT * FROM activation_codes WHERE wallet_id = ? AND purpose = ? AND is_used = 0 AND is_Expire = 0 AND expires_at > CURRENT_TIMESTAMP ORDER BY created_at DESC";
 		try (Connection connection = dataSource.getConnection();
 				PreparedStatement preparedStatement = connection.prepareStatement(query)) {
 			preparedStatement.setLong(1, walletId);
+			preparedStatement.setString(2, purpose);
 			ResultSet resultSet = preparedStatement.executeQuery();
 			if (resultSet.next()) {
 				return new ActivationCode(
 						resultSet.getLong("code_id"),
 						resultSet.getLong("wallet_id"),
 						resultSet.getString("code"),
+						resultSet.getString("purpose"),
 						resultSet.getTimestamp("created_at"),
 						resultSet.getTimestamp("expires_at"),
 						resultSet.getInt("attempts"),

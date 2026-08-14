@@ -5,10 +5,11 @@ import java.util.Objects;
 
 /**
  * Maps to the {@code activation_codes} table. Stores the one-time 6-digit
- * code issued to a new wallet so the owner can prove they hold the phone
- * number by entering a code received on WhatsApp. A code is single-use,
- * expires after {@code expiresAt} and becomes permanently invalid after a
- * maximum number of {@code attempts}.
+ * code issued to a wallet for phone-ownership proof, either to activate a new
+ * wallet ({@code purpose = "ACTIVATION"}) or to reset a forgotten PIN
+ * ({@code purpose = "RESET"}). A code is single-use, expires after
+ * {@code expiresAt} and becomes permanently invalid after a maximum number
+ * of {@code attempts}.
  */
 public class ActivationCode {
 
@@ -18,6 +19,9 @@ public class ActivationCode {
 
 	// The 6-digit activation payload
 	private String code;
+
+	// What the code authorizes: "ACTIVATION" (new wallet) or "RESET" (forgot PIN)
+	private String purpose;
 
 	// Validity window
 	private Timestamp createdAt;
@@ -33,23 +37,26 @@ public class ActivationCode {
 
 	/**
 	 * Creates a new activation code (INSERT) for a wallet; expiry, attempts
-	 * and usage flags are set by the database.
+	 * and usage flags are set by the database. Defaults to the "ACTIVATION"
+	 * purpose — the forgot-PIN flow overrides it via {@code setPurpose}.
 	 */
 	public ActivationCode(Long walletId, String code) {
 		this.walletId = walletId;
 		this.code = code;
+		this.purpose = "ACTIVATION";
 	}
 
 	/**
 	 * Full constructor used when a code row is read back from the database,
-	 * including its validity window and usage state.
+	 * including its purpose, validity window and usage state.
 	 */
-	public ActivationCode(Long codeId, Long walletId, String code,
+	public ActivationCode(Long codeId, Long walletId, String code, String purpose,
 			Timestamp createdAt, Timestamp expiresAt,
 			Integer attempts, Integer isUsed, Integer isExpire) {
 		this.codeId = codeId;
 		this.walletId = walletId;
 		this.code = code;
+		this.purpose = purpose;
 		this.createdAt = createdAt;
 		this.expiresAt = expiresAt;
 		this.attempts = attempts;
@@ -79,6 +86,14 @@ public class ActivationCode {
 
 	public void setCode(String code) {
 		this.code = code;
+	}
+
+	public String getPurpose() {
+		return purpose;
+	}
+
+	public void setPurpose(String purpose) {
+		this.purpose = purpose;
 	}
 
 	public Timestamp getCreatedAt() {
@@ -127,6 +142,7 @@ public class ActivationCode {
 				"codeId=" + codeId +
 				", walletId=" + walletId +
 				", code='" + code + '\'' +
+				", purpose='" + purpose + '\'' +
 				", createdAt=" + createdAt +
 				", expiresAt=" + expiresAt +
 				", attempts=" + attempts +

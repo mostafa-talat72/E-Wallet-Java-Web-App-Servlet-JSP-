@@ -90,7 +90,8 @@ public class AuthFilter implements Filter {
 		// public pages
 		if (uri.endsWith("index.jsp") || uri.endsWith("login.jsp")
 				|| uri.endsWith("register.jsp") || uri.endsWith("error.jsp")
-				|| uri.endsWith("activate.jsp")) {
+				|| uri.endsWith("activate.jsp")
+				|| uri.endsWith("forgot-pin.jsp") || uri.endsWith("forgot-pin-code.jsp")) {
 			return true;
 		}
 		// controllers with public actions
@@ -99,11 +100,12 @@ public class AuthFilter implements Filter {
 			return "atmExecute".equals(request.getParameter("action"));
 		}
 		if (uri.contains("walletController")) {
-			// Anonymous actions: login, signup and the wallet activation flow
-			// (activating requires only the pendingActivationWalletId session value).
+			// Anonymous actions: login, signup, the wallet activation flow and
+			// the forgot-PIN flow (both only need session values, never a wallet).
 			String action = request.getParameter("action");
 			return "login".equals(action) || "signup".equals(action)
-					|| "activate".equals(action) || "resendActivation".equals(action);
+					|| "activate".equals(action) || "resendActivation".equals(action)
+					|| "forgotPin".equals(action) || "resetPin".equals(action);
 		}
 		return false;
 	}

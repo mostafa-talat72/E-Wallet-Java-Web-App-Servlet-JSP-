@@ -18,11 +18,18 @@ public interface ActivationCodeService {
 	ActivationCode addActivationCode(ActivationCode activationCode) throws SQLException;
 
 	/**
-	 * Loads the most recent code of a wallet that is still valid
+	 * Loads the most recent "ACTIVATION" code of a wallet that is still valid
 	 * (not used, not expired).
 	 * @return the usable code row, or null when there is none.
 	 */
 	ActivationCode getValidActivationCodeByWalletId(long walletId);
+
+	/**
+	 * Loads the most recent code of a wallet for a specific purpose
+	 * ("ACTIVATION" or "RESET") that is still valid (not used, not expired).
+	 * @return the usable code row, or null when there is none.
+	 */
+	ActivationCode getValidActivationCodeByWalletIdAndPurpose(long walletId, String purpose);
 
 	/**
 	 * Updates the state of a code (attempts counter, used / expired flags).
