@@ -1,0 +1,5 @@
+# Node dependencies
+node_modules/
+
+# WhatsApp bot session (personal credentials — never commit)
+whatsapp-bot/auth/
