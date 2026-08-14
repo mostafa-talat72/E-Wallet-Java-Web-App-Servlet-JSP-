@@ -35,6 +35,13 @@ public interface EWalletUserService {
 	Wallet updateUserWalletPin(Wallet wallet, String newPin)throws SQLException;
 	
 	/**
+	 * Activates a previously inactive wallet (status 0 -> 1) once the owner
+	 * proves the phone number with a valid activation code.
+	 * @return the refreshed wallet row, or null if no row matched.
+	 */
+	Wallet activateWallet(Wallet wallet)throws SQLException;
+	
+	/**
 	 * Deletes a wallet together with all dependent rows (transaction codes, balance, cards)
 	 * in a single transaction, after verifying the credentials carried by deletedWallet.
 	 * @return true when the wallet was removed, false when the credentials did not match.

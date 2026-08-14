@@ -34,14 +34,16 @@ public class EWalletUserServiceImpl implements EWalletUserService {
 	/**
 	 * Inserts a new row into "wallets" with a freshly salted SHA-256 hash of the PIN,
 	 * then reloads the row by phone number to return the complete stored wallet.
+	 * The wallet is created as inactive (status = 0) until the owner proves the
+	 * phone number with a valid activation code.
 	 */
 	@Override
 	public Wallet signup(Wallet wallet) throws SQLException {
 		// Salt is generated per user so two wallets with the same PIN never share a hash.
 		String salt = PinUtil.generateSalt();
 		String pinHash = PinUtil.hash(wallet.getPinHash(), salt);
-		String query = "INSERT INTO wallets (phone_number, national_id,full_name, pin_hash, salt)"
-				+ " VALUES (?, ?, ?, ?, ?)";
+		String query = "INSERT INTO wallets (phone_number, national_id,full_name, pin_hash, salt, status)"
+				+ " VALUES (?, ?, ?, ?, ?, 0)";
 		
 		// try-with-resources guarantees the connection and statement are closed on every path.
 		try(Connection connection = dataSource.getConnection();
@@ -172,6 +174,10 @@ public class EWalletUserServiceImpl implements EWalletUserService {
 				ps.setLong(1, wallet.getWalletId());
 				ps.executeUpdate();
 			}
+			try (PreparedStatement ps = connection.prepareStatement("DELETE FROM activation_codes WHERE wallet_id = ?")) {
+				ps.setLong(1, wallet.getWalletId());
+				ps.executeUpdate();
+			}
 			// keep the wallet account row for transaction history, just disable it
 			try (PreparedStatement ps = connection.prepareStatement("UPDATE accounts SET status = 0 WHERE reference_id = ? AND account_type_id = 1")) {
 				ps.setLong(1, wallet.getWalletId());
@@ -215,6 +221,30 @@ public class EWalletUserServiceImpl implements EWalletUserService {
 				}
 			}
 		}
+	}
+
+	/**
+	 * Activates a "wallets" row (status 0 -> 1) after the owner entered a valid
+	 * activation code, stamps updated_at and reloads the row by id.
+	 */
+	@Override
+	public Wallet activateWallet(Wallet wallet) throws SQLException {
+		String query = "UPDATE wallets SET status = 1, updated_at = ? WHERE wallet_id = ?";
+		try (Connection connection = dataSource.getConnection();
+				PreparedStatement preparedStatement = connection.prepareStatement(query)) {
+			preparedStatement.setTimestamp(1, new Timestamp(System.currentTimeMillis()));
+			preparedStatement.setLong(2, wallet.getWalletId());
+
+			int rowsAffected = preparedStatement.executeUpdate();
+
+			if (rowsAffected > 0) {
+				return getUserWalletById(wallet.getWalletId());
+			}
+		} catch (SQLException e) {
+			throw e;
+		}
+
+		return null;
 	}
 
 	/**

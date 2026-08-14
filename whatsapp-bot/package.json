@@ -1,0 +1,15 @@
+{
+  "name": "ewallet-whatsapp-bot",
+  "version": "1.0.0",
+  "description": "Free WhatsApp sidecar service for the E-Wallet app: links your personal WhatsApp account once via QR and exposes a local HTTP endpoint the Java app calls to send activation codes.",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "@whiskeysockets/baileys": "^6.7.11",
+    "express": "^4.21.2",
+    "pino": "^9.5.0",
+    "qrcode-terminal": "^0.12.0"
+  }
+}

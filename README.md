@@ -27,6 +27,7 @@ A full **mobile-wallet simulator** built with classic Java EE technologies: **Se
 | Area | What it does |
 |---|---|
 | **Wallet accounts** | Signup with phone number + national ID + PIN, login, profile update, change PIN, delete account (atomic cascade). |
+| **Wallet activation** | New wallets start **inactive** (status 0): a 6-digit code is sent to the owner's WhatsApp (free, via a local Baileys sidecar using a personal WhatsApp account), and the wallet unlocks only after the code is entered (`activate.jsp`). Login is blocked for inactive wallets. |
 | **Cards** | Add / delete bank cards (16-digit number, CVV, expiry), list saved cards, add money to the wallet from a card. |
 | **Transfer** | Send money to any registered wallet by phone, with a 0.1% fee and an optional note. |
 | **ATM OTP codes** | Generate a one-time 6-figure code for a given amount; the code has a 10-minute countdown, is single-use and is consumed atomically. |
@@ -34,18 +35,21 @@ A full **mobile-wallet simulator** built with classic Java EE technologies: **Se
 | **ATM map** | Find ATMs by location (`atm/atm-map.jsp`). |
 | **Transactions history** | Full list with type filters (all / deposit / withdraw / transfer), text search, and **client-side pagination** (8 rows/page, page windows with ellipsis). |
 | **i18n + RTL** | English / Arabic with full RTL layout, persisted via `?lang=en|ar` in the session; every message lives in `messages*.properties` bundles. |
-| **Session security** | `AuthFilter` protects every page except the public ones (login, register, error, ATM pages). |
+| **Session security** | `AuthFilter` protects every page except the public ones (login, register, activate, error, ATM pages). |
 
 ---
 
 ## Tech Stack
 
-- **Java 8+** (compiled and verified with JDK 22)
+- **Java 8+** (compiled and verified with JDK 26)
 - **Jakarta/Javax Servlet API 4.0**, **JSP 2.3**, **JSTL 1.2**
 - **Apache Tomcat 9.0.x**
 - **Oracle Database 11g+** (`ojdbc8.jar`) — database access through a **JNDI connection pool** (`jdbc/ewallet/dBconnection`, a Tomcat `DataSource`)
 - **Bootstrap 5** (RTL + LTR layouts), **Bootstrap Icons**, **Chart.js** (dashboard chart)
 - **javax.mail 1.6.2** (vendor jar included; reserved for e-mail features)
+- **Node.js 18+ sidecar** (`whatsapp-bot/`): sends the activation codes through your
+  personal WhatsApp account via [Baileys](https://github.com/whiskeysockets/baileys)
+  (unofficial client — low volume only)
 
 ---
 
@@ -87,21 +91,23 @@ The classic three-layer pattern is preserved, with two deliberate design decisio
 src/main/
 ├── java/com/ewallet/
 │   ├── controller/            # Servlets (request routing)
-│   │   ├── walletController.java          # signup, login, update profile, change PIN, delete, logout
+│   │   ├── walletController.java          # signup, login, activate, resendActivation,
+│   │   │                                  # update profile, change PIN, delete, logout
 │   │   ├── transactionController.java     # addMoney, atmExecute (deposit/withdraw), transfer, history
 │   │   ├── transactionCodeController.java # generateCode, updateCodeStatus
 │   │   ├── cardController.java            # addCard, getAllCards, deleteCard, updateCardStatus
 │   │   └── atmController.java             # getAllATMs, getATMById
 │   ├── filter/
 │   │   └── AuthFilter.java                # session guard (@WebFilter("/*"))
-│   ├── model/                 # DB-mapped entities (Wallet, Card, Transaction, …)
-│   ├── service/               # service interfaces
+│   ├── model/                 # DB-mapped entities (Wallet, Card, ActivationCode, …)
+│   ├── service/               # service interfaces (+ MessageService for WhatsApp)
 │   ├── service/impl/          # implementations + TransactionExecutor (atomic money ops)
+│   │                          # + WhatsAppMessageServiceImpl (HTTP client for the sidecar)
 │   └── util/                  # PinUtil, UserWalletValidator, TransactionValidator,
 │                              # CardValidator, TransactionUtil, LanguageUtil, DateUtil
 └── webapp/                    # web root
-    ├── *.jsp                  # pages (login, register, home, profile, add-money,
-    │                          # send-money, transactions, atmotp, cards, error, index)
+    ├── *.jsp                  # pages (login, register, activate, home, profile,
+    │                          # add-money, send-money, transactions, atmotp, cards, error, index)
     ├── atm/                   # atm-machine.jsp (kiosk UI) + atm-map.jsp + atm.js + atm.css
     ├── assets/                # global css/js, Bootstrap & Chart.js vendors
     ├── WEB-INF/
@@ -109,27 +115,35 @@ src/main/
     │   ├── partials/          # shared JSP includes (head, navbar, footer, lang, …)
     │   ├── classes/ewallet/i18n/  # messages.properties / _en / _ar bundles
     │   └── lib/               # ojdbc8.jar, jstl-1.2.jar, javax.mail, activation
+whatsapp-bot/                  # Node sidecar: personal-WhatsApp QR link + POST /send
+sql/
+├── schema.sql                 # Oracle DDL (all tables incl. activation_codes)
+└── seed-data.sql              # lookup data, demo ATMs and their type-3 accounts
 ```
 
 ---
 
 ## Database Schema
 
-> The schema is Oracle. The project ships **no DDL script** — the tables above were created
-> with the constraints mirrored in the validators. A suggested DDL is under construction.
+> The schema ships as Oracle DDL in `sql/schema.sql`; `sql/seed-data.sql` populates the
+> lookup tables, demo ATMs and their type-3 accounts. Constraint names referenced by the
+> validators: `CHECK_CARD_NUMBER_LENGTH`, `CHECK_CVV_LENGTH`, `UQ_CARD_NUMBER_WALLET`,
+> `UQ_WALLET_CODE`, `UQ_ACTIVATION_WALLET_CODE`, plus the FKs from `transaction_codes`
+> and `activation_codes` into `wallets`.
 
 | Table | Purpose | Key columns |
 |---|---|---|
-| `wallets` | Registered wallets | `wallet_id`, `phone_number` (unique), `national_id`, `full_name`, **`pin_hash`**, **`salt`**, `status`, `created_at`, `updated_at` |
+| `wallets` | Registered wallets | `wallet_id`, `phone_number` (unique), `national_id`, `full_name`, **`pin_hash`**, **`salt`**, `status` (0 = pending activation, 1 = active), `created_at`, `updated_at` |
 | `wallet_balances` | Per-wallet balance | `wallet_id`, `available_balance`, `held_balance`, `updated_at` |
 | `accounts` | Ledger accounts (see account types) | `account_id`, `account_type_id`, `reference_id`, `status` |
 | `account_types` | 1 = Wallet, 2 = Card, 3 = ATM | `account_type_id`, `name` |
 | `cards` | Saved bank cards | `card_id`, `wallet_id`, `card_number` (16 digits, unique per wallet), `card_name`, `card_holder_name`, `bank_name`, `expire_date`, `cvv`, `status` |
 | `transactions` | Money-movement ledger | `from_account_id`, `to_account_id`, `transaction_type_id`, `transaction_status_id`, `amount`, `fees`, `reference_number` (unique `TX-….`), `description`, `created_at` |
 | `transaction_types` | 1 = Deposit, 2 = Withdraw, 3 = Transfer | `transaction_type_id`, `name` |
-| `transaction_statuses` | 1 = Pending, 2 = Success, 3 = Failed | `transaction_status_id`, `name` |
+| `transaction_status` | 1 = Pending, 2 = Success, 3 = Failed, 4 = Cancelled, 5 = Expired | `transaction_status_id`, `name` |
 | `transaction_codes` | One-time ATM OTP codes | `code_id`, `wallet_id`, `code` (6 digits, unique per wallet), `amount`, `created_at`, `expires_at`, `attempts`, `is_used`, `is_expire` |
-| `atms` | Registered ATM machines | `atm_id`, `atm_name`, `atm_address`, `latitude`, `longitude`, `status` |
+| `activation_codes` | One-time 6-digit activation codes | `code_id`, `wallet_id`, `code` (6 digits, unique per wallet), `created_at`, `expires_at`, `attempts`, `is_used`, `is_expire` |
+| `atms` | Registered ATM machines | `atm_id`, `atm_name`, `atm_location`, `mapX`, `mapY`, `status` |
 
 ### Why an `accounts` layer?
 
@@ -169,12 +183,30 @@ Insufficient balance returns the i18n error `err.amount.insufficient` (transfer)
 
 ### 2. Session guard (`AuthFilter`, `@WebFilter("/*")`)
 - Without a session containing `wallet`, every request is redirected to `login.jsp`.
-- **Public paths only:** `/`, `index.jsp`, `login.jsp`, `register.jsp`, `error.jsp`,
-  `/assets/*`, the whole `atm/` directory + `atmController`, the `atmExecute` action of
-  `transactionController` (the ATM machine is a public kiosk), and the `login`/`signup`
-  actions of `walletController`.
+- **Public paths only:** `/`, `index.jsp`, `login.jsp`, `register.jsp`,
+  `activate.jsp`, `error.jsp`, `/assets/*`, the whole `atm/` directory +
+  `atmController`, the `atmExecute` action of `transactionController` (the ATM
+  machine is a public kiosk), and the `login`/`signup`/`activate`/`resendActivation`
+  actions of `walletController` (the activation flow needs no session wallet).
 
-### 3. Atomic money movements (`TransactionExecutor`)
+### 3. Wallet activation (phone-ownership proof)
+- New wallets are created **inactive** (`status = 0` — changed DDL default and
+  explicit in `signup`), so a new registration can never log in until activated.
+- Signup issues a 6-digit code into `activation_codes` (10-minute expiry, max
+  3 attempts, unique per wallet) and sends it on WhatsApp through the sidecar.
+- `action=activate` verifies the code (format → still-valid row → attempts →
+  match), consumes it and flips `wallets.status` to 1. "Valid" is decided by the
+  **database clock** (`expires_at > CURRENT_TIMESTAMP`), never by the JVM clock,
+  because the DB and the JVM can run in different timezones (Cairo is UTC+2 in the
+  DB's tz data but UTC+3 in a modern JVM — a JVM-side expiry check would reject
+  every fresh code). Wrong codes increment `attempts`; after 3 the code is locked
+  forever.
+- `action=resendActivation` consumes the old valid code and issues + sends a
+  fresh one (fresh attempts counter).
+- Login of an inactive wallet redirects to `activate.jsp` instead of opening a
+  session.
+
+### 4. Atomic money movements (`TransactionExecutor`)
 - One `Connection`, `setAutoCommit(false)`, then `commit()` or `rollback()`.
 - The OTP invalidation is **inside the same transaction** as the ledger insert and the
   balance update. `markCodeUsed` runs
@@ -186,7 +218,7 @@ Insufficient balance returns the i18n error `err.amount.insufficient` (transfer)
   because the OTP codes table referenced it (FK violation) and the cascade ran on four
   separate connections.
 
-### 4. Error keys are i18n-safe
+### 5. Error keys are i18n-safe
 `TxException` propagates bundle keys (`err.atm.codeNotFound`, `err.amount.insufficient`, …)
 which the JSP pages and the ATM machine JS map back to translated messages. No raw English
 hard-coded in controllers.
@@ -200,8 +232,10 @@ All controllers are mapped with `@WebServlet` and use `doGet` → `doPost`.
 ### `walletController`
 | action | Method | Description |
 |---|---|---|
-| `signup` | POST | Validates + creates wallet (server-side hashing), creates balance & account |
-| `login` | POST | Verifies PIN (salted hash), stores `wallet` + `walletBalance` in session |
+| `signup` | POST | Validates + creates wallet (server-side hashing, status 0), creates balance & account, issues + sends the activation code |
+| `login` | POST | Verifies PIN (salted hash), stores `wallet` + `walletBalance` in session (inactive wallets are redirected to activation) |
+| `activate` | POST | Verifies the 6-digit WhatsApp code, unlocks the wallet (status 1) and opens the session |
+| `resendActivation` | GET | Consumes the old code and issues + sends a fresh one |
 | `updateUserWallet` | POST | Update full name |
 | `updateUserWalletPin` | POST | Verify current PIN, generate new salt+hash via service |
 | `deleteUserWallet` | POST | Cascade-delete wallet (atomic) and invalidate session |
@@ -245,6 +279,7 @@ All controllers are mapped with `@WebServlet` and use `doGet` → `doPost`.
 | `index.jsp` | public | Redirects to `login.jsp` |
 | `login.jsp` | public | Login form → `walletController?action=login` |
 | `register.jsp` | public | Signup form → `walletController?action=signup` |
+| `activate.jsp` | public | Enter the 6-digit WhatsApp code → `walletController?action=activate`; resend via `action=resendActivation` |
 | `home.jsp` | logged in | Dashboard: balance, quick actions, mini chart (demo data) |
 | `profile.jsp` | logged in | Update name, change PIN, delete account → `walletController` |
 | `add-money.jsp` | logged in | Deposit from a saved card → `transactionController?action=addMoney` |
@@ -278,18 +313,21 @@ Shared UI lives in `WEB-INF/partials/` (`head`, `navbar`, `footer`, `page-head`,
 ## Setup & Run
 
 ### Prerequisites
-- **JDK 8+** (verified with JDK 22)
+- **JDK 8+** (verified with JDK 26)
 - **Tomcat 9.0.x**
 - **Oracle database** (the app was developed against Oracle; `ojdbc8.jar` is already in `WEB-INF/lib`)
 
 ### 1. Create the Oracle schema
-Create the tables described in [Database Schema](#database-schema) on your Oracle instance
-(the constraint names referenced by the validators: `CHECK_CARD_NUMBER_LENGTH`,
-`CHECK_CVV_LENGTH`, `UQ_CARD_NUMBER_WALLET`, `UQ_WALLET_CODE`, plus an FK from
-`transaction_codes.wallet_id` → `wallets.wallet_id`).
+Run the shipped scripts in order:
 
-Seed a few ATMs into `atms` so the ATM map/machine have machines to use, and create one
-type-3 account per ATM.
+```
+sqlplus ewallet/password@localhost:1521/XE @sql/schema.sql
+sqlplus ewallet/password@localhost:1521/XE @sql/seed-data.sql
+```
+
+`schema.sql` creates every table (including `activation_codes`) and
+`seed-data.sql` inserts the lookup rows (account types, transaction types,
+transaction statuses), three demo ATMs and one type-3 account per ATM.
 
 ### 2. Configure the JNDI DataSource in Tomcat
 The servlets inject `@Resource(name = "jdbc/ewallet/dBconnection")`. In
@@ -310,18 +348,37 @@ The servlets inject `@Resource(name = "jdbc/ewallet/dBconnection")`. In
 </Context>
 ```
 
-### 3. Deploy
+### 3. Start the WhatsApp sidecar (for activation codes)
+```bash
+cd whatsapp-bot
+npm install
+npm start
+```
+On first start a **QR code** is printed in the terminal — scan it from your phone
+(WhatsApp → Settings → Linked Devices → Link a Device). The session is stored in
+`whatsapp-bot/auth/`, so it reconnects automatically afterwards. Test it:
+
+```bash
+curl -X POST http://localhost:3001/send -H "Content-Type: application/json" -d "{\"to\":\"201012345678\",\"text\":\"Test\"}"
+```
+
+The Java app calls this service automatically after every signup
+(`WhatsAppMessageServiceImpl`, URL overridable with `-Dewallet.whatsapp.url=…`).
+If the sidecar is down the activation page **falls back to showing the code on
+screen**, so the app stays usable while developing without WhatsApp.
+
+### 4. Deploy
 Option A — copy the `src/main/webapp` content (after compiling `src/main/java` into
 `WEB-INF/classes`) into `webapps/E-Wallet`.  
 Option B — import the folder as a **Dynamic Web Project** in Eclipse / IntelliJ, set
 **Target runtime = Tomcat 9**, and run on the server.
 
-### 4. Open
+### 5. Open
 ```
 http://localhost:8080/E-Wallet/
 ```
 You’ll land on the login page. Register a wallet (Egyptian phone format suggested:
-11 digits), then explore.
+11 digits), **enter the 6-digit WhatsApp activation code**, then explore.
 
 > **Note:** Tomcat 9 with the `javax.*` (not `jakarta.*`) packages is required — the
 > code imports `javax.servlet`, `javax.annotation.Resource`, etc.
@@ -352,9 +409,12 @@ You’ll land on the login page. Register a wallet (Egyptian phone format sugges
 
 ## Known Limitations & Future Work
 
-- **No DDL script** ships with the repo — the schema must be created manually (see Setup).
 - **Client-side pagination** on the transactions page: the server loads the full history;
   switch to server-side paging (`OFFSET … FETCH NEXT`) when rows grow into thousands.
+- The **WhatsApp sidecar uses an unofficial client** (Baileys) and your personal number.
+  It is fine for development/low volume, but WhatsApp may restrict accounts used for
+  automation — for production, replace `MessageService` with an official provider
+  (Twilio, Meta Cloud API, …).
 - `javax.mail` is bundled but **no e-mail feature is wired yet** (candidate: PIN recovery).
 - **HTTPS:** the group is protected against DB leaks via hashing; protect the transport by
   enabling TLS in Tomcat (production deployments).

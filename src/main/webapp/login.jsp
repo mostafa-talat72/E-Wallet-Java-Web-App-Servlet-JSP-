@@ -122,10 +122,7 @@
       <p class="auth-foot">
         <fmt:message key="auth.noAccount"/> <a href="register.jsp${qLang}"><fmt:message key="auth.registerLink"/></a>
       </p>
-      <div class="auth-demo">
-        <i class="bi bi-info-circle-fill"></i>
-        <span><fmt:message key="auth.demoHint"/></span>
-      </div>
+      
     </div>
   </div>
 </div>

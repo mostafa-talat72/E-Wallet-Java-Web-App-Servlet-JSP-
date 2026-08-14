@@ -3,6 +3,8 @@ package com.ewallet.controller;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.sql.SQLException;
+
+import java.util.HashMap;
 import java.util.Map;
 
 import javax.servlet.ServletException;
@@ -14,15 +16,21 @@ import javax.annotation.Resource;
 import javax.sql.DataSource;
 
 import com.ewallet.model.Account;
+import com.ewallet.model.ActivationCode;
 import com.ewallet.model.Wallet;
 import com.ewallet.model.WalletBalance;
 import com.ewallet.service.AccountService;
+import com.ewallet.service.ActivationCodeService;
 import com.ewallet.service.EWalletBalanceService;
 import com.ewallet.service.EWalletUserService;
+import com.ewallet.service.MessageService;
 import com.ewallet.service.impl.AccountServiceImpl;
+import com.ewallet.service.impl.ActivationCodeServiceImpl;
 import com.ewallet.service.impl.EWalletBalanceServiceImpl;
 import com.ewallet.service.impl.EWalletUserServiceImpl;
+import com.ewallet.service.impl.WhatsAppMessageServiceImpl;
 import com.ewallet.util.LanguageUtil;
+import com.ewallet.util.TransactionUtil;
 import com.ewallet.util.UserWalletValidator;
 
 
@@ -34,6 +42,8 @@ import com.ewallet.util.UserWalletValidator;
  * Exposed actions (via the "action" request parameter):
  *  - signup              : registers a new wallet user account
  *  - login               : authenticates an existing wallet user
+ *  - activate            : verifies the WhatsApp activation code and unlocks the wallet
+ *  - resendActivation    : issues and sends a fresh activation code
  *  - updateUserWallet    : updates the wallet user's full name
  *  - updateUserWalletPin : changes the wallet user's 6-digit PIN
  *  - deleteUserWallet    : permanently deletes a wallet user account
@@ -43,6 +53,8 @@ import com.ewallet.util.UserWalletValidator;
  * Examples:
  *  http://localhost:8080/E-Wallet/walletController?action=signup
  *  http://localhost:8080/E-Wallet/walletController?action=login
+ *  http://localhost:8080/E-Wallet/walletController?action=activate
+ *  http://localhost:8080/E-Wallet/walletController?action=resendActivation
  *  http://localhost:8080/E-Wallet/walletController?action=updateUserWallet
  *  http://localhost:8080/E-Wallet/walletController?action=updateUserWalletPin
  *  http://localhost:8080/E-Wallet/walletController?action=deleteUserWallet
@@ -55,16 +67,20 @@ public class walletController extends HttpServlet {
 	private DataSource dataSource;
 	
 	private EWalletUserService eWalletUserService;
+	private ActivationCodeService activationCodeService;
+	private MessageService messageService;
 
 	
 	 /**
 	 * Servlet initialization hook.
 	 * Looks up the JDBC DataSource injected via @Resource and
-	 * constructs the EWalletUserService used by all action methods.
+	 * constructs the services used by all action methods.
 	 */
 	 @Override
     public void init() throws ServletException {
 	 eWalletUserService = new EWalletUserServiceImpl(dataSource);
+	 activationCodeService = new ActivationCodeServiceImpl(dataSource);
+	 messageService = new WhatsAppMessageServiceImpl();
     }
 
 	
@@ -91,6 +107,12 @@ public class walletController extends HttpServlet {
 				break;
 			case "login":
 				login(request, response);
+				break;
+			case "activate":
+				activate(request, response);
+				break;
+			case "resendActivation":
+				resendActivation(request, response);
 				break;
 			case "updateUserWallet":
 				updateUserWallet(request, response);
@@ -156,8 +178,25 @@ public class walletController extends HttpServlet {
 				
 				AccountService accountService = new AccountServiceImpl(dataSource);
 				accountService.addAcount(new Account(1, newWallet.getWalletId()));
+				// Issue an activation code, send it on WhatsApp, then send the new
+				// owner to the activation page; the wallet stays locked (status = 0)
+				// until they prove the phone number.
 				try {
-					response.sendRedirect("login.jsp" + LanguageUtil.langQuery(request));
+					ActivationCode activationCode = new ActivationCode(newWallet.getWalletId(),
+							TransactionUtil.generateActivationCode());
+					activationCode = activationCodeService.addActivationCode(activationCode);
+					boolean sent = messageService.send(newWallet.getPhoneNumber(),
+							"Your E-Wallet activation code is " + activationCode.getCode());
+					request.getSession().setAttribute("pendingActivationWalletId", newWallet.getWalletId());
+					if (!sent) {
+						// WhatsApp unreachable: still show the code on the page as a fallback.
+						request.getSession().setAttribute("activationFallbackCode", activationCode.getCode());
+					}
+					response.sendRedirect("activate.jsp" + LanguageUtil.langQuery(request));
+				} catch (SQLException e) {
+					// Code could not be persisted: fall back to the shared error
+					// rendering below (register.jsp).
+					errors = UserWalletValidator.parseSqlException(e);
 				} catch (IOException e) {
 					e.printStackTrace();
 				}
@@ -208,6 +247,17 @@ public class walletController extends HttpServlet {
 			}
 			
 			if(errors.isEmpty() && wallet != null) {
+				if (wallet.getStatus() == 0) {
+					// Inactive wallet: never open a session — send the owner to the
+					// activation page to prove the phone number with the WhatsApp code.
+					request.getSession().setAttribute("pendingActivationWalletId", wallet.getWalletId());
+			        try {
+						response.sendRedirect("activate.jsp" + LanguageUtil.langQuery(request));
+					} catch (IOException e) {
+						e.printStackTrace();
+					}
+			        return;
+				}
 				// Store the authenticated wallet and its latest balance in the session.
 				request.getSession().setAttribute("wallet", wallet);
 				WalletBalance walletBalance = new EWalletBalanceServiceImpl(dataSource).getWalletBalanceByWalletId(wallet.getWalletId());
@@ -238,6 +288,132 @@ public class walletController extends HttpServlet {
 		
 	}
 
+
+	/**
+	 * Handles the "activate" action: verifies the 6-digit activation code the
+	 * owner received on WhatsApp. On success the wallet is unlocked (status = 1),
+	 * the code is consumed and the user is logged in; failures (wrong code,
+	 * expired code, too many attempts) re-render the activation page with an error.
+	 */
+	private void activate(HttpServletRequest request, HttpServletResponse response) {
+		String code = request.getParameter("code");
+		Long pendingWalletId = (Long) request.getSession().getAttribute("pendingActivationWalletId");
+		Map<String, String> errors = new HashMap<>();
+
+		if (pendingWalletId == null) {
+			// No pending activation in this session (page opened directly).
+			errors.put("activationErr", "err.activation.invalidSession");
+		} else if (code == null || !code.matches("\\d{6}")) {
+			errors.put("codeErr", "err.activation.invalidFormat");
+		} else {
+			try {
+				ActivationCode stored = activationCodeService.getValidActivationCodeByWalletId(pendingWalletId);
+				if (stored == null) {
+					// No usable code: none was created yet, or its 10-minute window
+					// has passed (expiry is decided by the DB clock in the query).
+					errors.put("codeErr", "err.activation.expired");
+				} else if (stored.getAttempts() >= 3) {
+					// Code permanently locked after the maximum number of attempts.
+					errors.put("codeErr", "err.activation.locked");
+				} else if (!stored.getCode().equals(code)) {
+					// Wrong code: increment the attempts counter and fail.
+					stored.setAttempts(stored.getAttempts() + 1);
+					activationCodeService.updateActivationCodeByWalletIdAndCode(stored);
+					errors.put("codeErr", "err.activation.wrong");
+				} else {
+					// Correct code: consume it and unlock the wallet.
+					stored.setAttempts(stored.getAttempts() + 1);
+					stored.setIsUsed(1);
+					stored.setIsExpire(1);
+					activationCodeService.updateActivationCodeByWalletIdAndCode(stored);
+
+					Wallet wallet = eWalletUserService.getUserWalletById(pendingWalletId);
+					wallet = eWalletUserService.activateWallet(wallet);
+					if (wallet != null) {
+						// Activation complete: open the session like a successful login.
+						request.getSession().removeAttribute("pendingActivationWalletId");
+						request.getSession().removeAttribute("activationFallbackCode");
+						request.getSession().setAttribute("wallet", wallet);
+						WalletBalance walletBalance = new EWalletBalanceServiceImpl(dataSource)
+								.getWalletBalanceByWalletId(wallet.getWalletId());
+						request.getSession().setAttribute("walletBalance", walletBalance);
+						response.sendRedirect("home.jsp" + LanguageUtil.langQuery(request));
+						return;
+					}
+					errors.put("activationErr", "err.generic");
+				}
+			} catch (SQLException e) {
+				errors = UserWalletValidator.parseSqlException(e);
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
+		}
+
+		if (!errors.isEmpty()) {
+			// Re-render the activation page with the error messages.
+			request.setAttribute("errors", errors);
+			try {
+				request.getRequestDispatcher("activate.jsp" + LanguageUtil.langQuery(request)).forward(request, response);
+			} catch (ServletException | IOException e) {
+				e.printStackTrace();
+			}
+		}
+	}
+
+	/**
+	 * Handles the "resendActivation" action: consumes the current valid code
+	 * (if any), issues a fresh one, sends it on WhatsApp and returns the user
+	 * to the activation page; the fresh code has a brand new attempts counter.
+	 */
+	private void resendActivation(HttpServletRequest request, HttpServletResponse response) {
+		Long pendingWalletId = (Long) request.getSession().getAttribute("pendingActivationWalletId");
+		if (pendingWalletId == null) {
+			try {
+				response.sendRedirect("login.jsp" + LanguageUtil.langQuery(request));
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
+			return;
+		}
+		try {
+			// Invalidate any still-usable code so only the new one can be entered.
+			ActivationCode existing = activationCodeService.getValidActivationCodeByWalletId(pendingWalletId);
+			if (existing != null) {
+				existing.setAttempts(3);
+				existing.setIsUsed(1);
+				existing.setIsExpire(1);
+				activationCodeService.updateActivationCodeByWalletIdAndCode(existing);
+			}
+			ActivationCode fresh = new ActivationCode(pendingWalletId, TransactionUtil.generateActivationCode());
+			fresh = activationCodeService.addActivationCode(fresh);
+
+			Wallet wallet = eWalletUserService.getUserWalletById(pendingWalletId);
+			if (wallet == null) {
+				// Wallet disappeared between requests: drop the pending state.
+				request.getSession().removeAttribute("pendingActivationWalletId");
+				response.sendRedirect("login.jsp" + LanguageUtil.langQuery(request));
+				return;
+			}
+			boolean sent = messageService.send(wallet.getPhoneNumber(),
+					"Your E-Wallet activation code is " + fresh.getCode());
+			request.getSession().removeAttribute("activationFallbackCode");
+			if (!sent) {
+				request.getSession().setAttribute("activationFallbackCode", fresh.getCode());
+			}
+			request.setAttribute("resent", true);
+			request.getRequestDispatcher("activate.jsp" + LanguageUtil.langQuery(request)).forward(request, response);
+		} catch (SQLException e) {
+			Map<String, String> errors = UserWalletValidator.parseSqlException(e);
+			request.setAttribute("errors", errors);
+			try {
+				request.getRequestDispatcher("activate.jsp" + LanguageUtil.langQuery(request)).forward(request, response);
+			} catch (ServletException | IOException ex) {
+				ex.printStackTrace();
+			}
+		} catch (ServletException | IOException e) {
+			e.printStackTrace();
+		}
+	}
 
 	/**
 	 * Handles the "updateUserWallet" action: updates the full name of the

@@ -4,8 +4,6 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.sql.Timestamp;
-import java.util.Random;
 
 import javax.sql.DataSource;
 
@@ -20,8 +18,6 @@ import com.ewallet.service.TransactionCodeService;
 public class TransactionCodeServiceImpl implements TransactionCodeService {
 
 	private DataSource dataSource;
-	private Random random = new Random();
-
 	public TransactionCodeServiceImpl(DataSource dataSource) {
 		this.dataSource = dataSource;
 	}

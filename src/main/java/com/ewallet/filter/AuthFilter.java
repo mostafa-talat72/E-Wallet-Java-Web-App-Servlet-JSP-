@@ -23,8 +23,8 @@ import javax.servlet.http.HttpSession;
  *   <li>root "/" and empty paths</li>
  *   <li>static assets under /assets/ (CSS, JS, images)</li>
  *   <li>the ATM machine/map flow: /atm/* pages and the atmController</li>
- *   <li>the public JSPs: index, login, register and error</li>
- *   <li>whitelisted controller actions (wallet login/signup, ATM execute)</li>
+ *   <li>the public JSPs: index, login, register, error and activate</li>
+ *   <li>whitelisted controller actions (wallet login/signup/activation flow, ATM execute)</li>
  * </ul>
  */
 @WebFilter("/*")
@@ -89,7 +89,8 @@ public class AuthFilter implements Filter {
 		}
 		// public pages
 		if (uri.endsWith("index.jsp") || uri.endsWith("login.jsp")
-				|| uri.endsWith("register.jsp") || uri.endsWith("error.jsp")) {
+				|| uri.endsWith("register.jsp") || uri.endsWith("error.jsp")
+				|| uri.endsWith("activate.jsp")) {
 			return true;
 		}
 		// controllers with public actions
@@ -98,9 +99,11 @@ public class AuthFilter implements Filter {
 			return "atmExecute".equals(request.getParameter("action"));
 		}
 		if (uri.contains("walletController")) {
-			// Only the login and signup actions are accessible anonymously
+			// Anonymous actions: login, signup and the wallet activation flow
+			// (activating requires only the pendingActivationWalletId session value).
 			String action = request.getParameter("action");
-			return "login".equals(action) || "signup".equals(action);
+			return "login".equals(action) || "signup".equals(action)
+					|| "activate".equals(action) || "resendActivation".equals(action);
 		}
 		return false;
 	}
