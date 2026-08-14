@@ -202,30 +202,6 @@
             </form>
           </div>
         </div>
-
-        <div class="panel">
-          <div class="panel-head">
-            <h5 class="panel-title"><i class="bi bi-shield-check"></i> <fmt:message key="profile.security"/></h5>
-          </div>
-          <div class="panel-body d-flex flex-column gap-3">
-            <div class="setting-row">
-              <span class="setting-icon" style="background:var(--success-bg);color:var(--success)"><i class="bi bi-shield-lock-fill"></i></span>
-              <div class="flex-grow-1">
-                <strong class="d-block small">OTP — <fmt:message key="profile.twoFactor"/></strong>
-                <span class="small text-muted"><fmt:message key="profile.securityDesc"/></span>
-              </div>
-              <span class="badge badge-success"><i class="bi bi-check-circle"></i> <fmt:message key="common.active"/></span>
-            </div>
-            <div class="setting-row">
-              <span class="setting-icon" style="background:var(--info-bg);color:var(--info)"><i class="bi bi-wifi"></i></span>
-              <div class="flex-grow-1">
-                <strong class="d-block small"><fmt:message key="common.phone"/></strong>
-                <span class="small text-muted" style="direction:ltr;display:inline-block">${sessionScope.wallet.phoneNumber}</span>
-              </div>
-              <span class="badge badge-success"><i class="bi bi-check-circle"></i> <fmt:message key="common.verified"/></span>
-            </div>
-          </div>
-        </div>
       </div>
     </div>
 

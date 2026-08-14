@@ -84,32 +84,27 @@ public class transactionCodeController extends HttpServlet {
 			TransactionValidator.checkAmount(amount, errors);
 			if(currWalletBalance != null && errors.isEmpty()) {
 
-				if(currWalletBalance.getAvailableBalance().compareTo(amount.add(amount.divide(new BigDecimal(100)))) < 0) {
+				TransactionCode transactionCode = new TransactionCode(wallet.getWalletId(), null, amount);
+				while(true) {
+					try {
+						String code =TransactionUtil.generateTransactionCode();
+						transactionCode.setCode(code);
+						transactionCode =  new TransactionCodeServiceImpl(dataSource).addTransactionCode(transactionCode);
+						isGeneratedCode = true;
+						request.setAttribute("done", "1");
+						request.setAttribute("transactionCodeVal", transactionCode.getCode());
+						request.setAttribute("created_at", transactionCode.getCreatedAt());
+						request.setAttribute("expires_at", transactionCode.getExpiresAt());
+						request.setAttribute("amountVal", amount);
+						break;
+					}catch (SQLException e) {
+						String msg = e.getMessage();
 
-					errors.put("amount", "err.amount.invalid");
-				}else {
-					TransactionCode transactionCode = new TransactionCode(wallet.getWalletId(), null, amount);
-					while(true) {
-						try {
-							String code =TransactionUtil.generateTransactionCode();
-							transactionCode.setCode(code);
-							transactionCode =  new TransactionCodeServiceImpl(dataSource).addTransactionCode(transactionCode);
-							isGeneratedCode = true;
-							request.setAttribute("done", "1");
-							request.setAttribute("transactionCodeVal", transactionCode.getCode());
-							request.setAttribute("created_at", transactionCode.getCreatedAt());
-							request.setAttribute("expires_at", transactionCode.getExpiresAt());
-							request.setAttribute("amountVal", amount);
-							break;
-						}catch (SQLException e) {
-							String msg = e.getMessage();
-
-							if (msg != null && msg.contains("UQ_WALLET_CODE")) {
-								transactionCode.setCode(null);
-								continue;
-							}
-							break;
+						if (msg != null && msg.contains("UQ_WALLET_CODE")) {
+							transactionCode.setCode(null);
+							continue;
 						}
+						break;
 					}
 				}
 			}

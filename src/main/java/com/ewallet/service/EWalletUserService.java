@@ -12,6 +12,8 @@ public interface EWalletUserService {
 	
 	Wallet updateUserWallet(Wallet wallet)throws SQLException;
 	
+	Wallet updateUserWalletPin(Wallet wallet, String newPin)throws SQLException;
+	
 	boolean deleteUserWallet(Wallet wallet, Wallet deletedWallet)throws SQLException;
 	
 	Wallet getUserWalletById(long id)throws SQLException;

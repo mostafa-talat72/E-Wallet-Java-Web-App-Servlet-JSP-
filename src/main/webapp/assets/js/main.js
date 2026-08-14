@@ -478,6 +478,68 @@
     var list = APP.one("[data-tx-list]");
     if (!list) return;
     var searches = Array.prototype.slice.call(APP.sel("[data-tx-search]"));
+    var pageSize = parseInt(list.getAttribute("data-page-size"), 10) || 8;
+    var page = 0;
+    var filteredRows = [];
+    var panel = list.closest(".panel");
+    var rangeEl = panel ? panel.querySelector("[data-tx-range]") : null;
+    var totalEl = panel ? panel.querySelector("[data-tx-total]") : null;
+    var pagesEl = panel ? panel.querySelector("[data-tx-pages]") : null;
+    var prevBtn = panel ? panel.querySelector("[data-tx-page='prev']") : null;
+    var nextBtn = panel ? panel.querySelector("[data-tx-page='next']") : null;
+
+    function range(from, to) {
+      var a = [];
+      for (var i = from; i <= to; i++) a.push(i);
+      return a;
+    }
+    function paginationWindow(current, pages) {
+      if (pages <= 7) return range(1, pages);
+      var out = [1];
+      var lo = Math.max(2, current - 1);
+      var hi = Math.min(pages - 1, current + 1);
+      if (lo > 2) out.push("...");
+      for (var i = lo; i <= hi; i++) out.push(i);
+      if (hi < pages - 1) out.push("...");
+      out.push(pages);
+      return out;
+    }
+    function renderPager() {
+      var pages = Math.max(1, Math.ceil(filteredRows.length / pageSize));
+      if (page > pages - 1) page = pages - 1;
+      list.querySelectorAll("[data-tx-row]").forEach(function (row) { row.style.display = "none"; });
+      var start = page * pageSize;
+      var slice = filteredRows.slice(start, start + pageSize);
+      slice.forEach(function (row) { row.style.display = ""; });
+      if (rangeEl) rangeEl.textContent = filteredRows.length === 0 ? "0" : (start + 1) + "–" + (start + slice.length);
+      if (totalEl) totalEl.textContent = filteredRows.length;
+      if (pagesEl) {
+        if (filteredRows.length === 0) {
+          pagesEl.style.display = "none";
+        } else {
+          pagesEl.style.display = "";
+          pagesEl.innerHTML = "";
+          paginationWindow(page, pages).forEach(function (b) {
+            if (b === "...") {
+              var dot = document.createElement("span");
+              dot.className = "px-1 align-self-center text-muted small";
+              dot.textContent = "…";
+              pagesEl.appendChild(dot);
+            } else {
+              var btn = document.createElement("button");
+              btn.type = "button";
+              btn.className = "btn btn-sm " + (page === b - 1 ? "btn-primary" : "btn-outline-line");
+              btn.textContent = b;
+              btn.addEventListener("click", function () { page = b - 1; renderPager(); });
+              pagesEl.appendChild(btn);
+            }
+          });
+        }
+      }
+      if (prevBtn) prevBtn.disabled = page === 0;
+      if (nextBtn) nextBtn.disabled = page >= pages - 1 || filteredRows.length === 0;
+    }
+
     APP.sel("[data-filter-pill]").forEach(function (pill) {
       pill.addEventListener("click", function () {
         APP.sel("[data-filter-pill]").forEach(function (p) { p.classList.remove("active"); });
@@ -501,20 +563,26 @@
       return type === filter;
     }
     function applyTxFilter(text, filter) {
-      var visible = 0;
+      filteredRows = [];
       list.querySelectorAll("[data-tx-row]").forEach(function (row) {
         var type = row.getAttribute("data-type");
         var amount = parseFloat(row.getAttribute("data-amount")) || 0;
         var hay = (row.textContent || "").toLowerCase();
         var matchesFilter = filter === "receive" ? amount > 0 : typeMatches(type, filter);
         var matchesText = !text || hay.indexOf(text.toLowerCase()) !== -1;
-        var show = matchesFilter && matchesText;
-        row.style.display = show ? "" : "none";
-        if (show) visible++;
+        if (matchesFilter && matchesText) filteredRows.push(row);
       });
       var empty = list.querySelector(".empty-no-tx");
-      if (empty) empty.style.display = visible === 0 ? "" : "none";
+      if (empty) empty.style.display = filteredRows.length === 0 ? "" : "none";
+      page = 0;
+      renderPager();
     }
+    if (prevBtn) prevBtn.addEventListener("click", function () { if (page > 0) { page--; renderPager(); } });
+    if (nextBtn) nextBtn.addEventListener("click", function () {
+      var pages = Math.max(1, Math.ceil(filteredRows.length / pageSize));
+      if (page < pages - 1) { page++; renderPager(); }
+    });
+    applyTxFilter(getSearchValue(), "all");
   }
 
   function initNotif() {

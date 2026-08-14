@@ -51,7 +51,7 @@
         </div>
       </div>
       <div class="table-responsive">
-        <table class="table align-middle" data-tx-list>
+        <table class="table align-middle" data-tx-list data-page-size="8">
           <thead>
             <tr>
               <th><fmt:message key="common.type"/></th>
@@ -135,14 +135,14 @@
           </tbody>
         </table>
       </div>
-      <div class="panel-foot d-flex justify-content-between align-items-center flex-wrap gap-2">
+      <div class="panel-foot d-flex justify-content-between align-items-center flex-wrap gap-2" data-tx-pager-wrap>
         <span class="small text-muted">
-          <fmt:message key="tx.showing"/> <strong>1</strong>–<strong>8</strong> <%= transactions.size() %>
+          <fmt:message key="tx.showing"/> <strong data-tx-range>0</strong> <fmt:message key="tx.of"/> <strong data-tx-total><%= transactions != null ? transactions.size() : 0 %></strong>
         </span>
-        <div class="d-flex gap-2">
-          <button type="button" class="btn btn-outline-line btn-sm disabled"><fmt:message key="common.back"/></button>
-          <button type="button" class="btn btn-outline-line btn-sm disabled">1</button>
-          <button type="button" class="btn btn-outline-line btn-sm"><fmt:message key="common.next"/></button>
+        <div class="d-flex gap-2 flex-wrap justify-content-center" data-tx-pager>
+          <button type="button" class="btn btn-outline-line btn-sm" data-tx-page="prev" disabled><fmt:message key="common.back"/></button>
+          <div class="d-flex gap-1 flex-wrap" data-tx-pages></div>
+          <button type="button" class="btn btn-outline-line btn-sm" data-tx-page="next" disabled><fmt:message key="common.next"/></button>
         </div>
       </div>
     </div>

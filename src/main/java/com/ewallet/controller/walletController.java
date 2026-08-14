@@ -20,7 +20,6 @@ import com.ewallet.service.AccountService;
 import com.ewallet.service.EWalletBalanceService;
 import com.ewallet.service.EWalletUserService;
 import com.ewallet.service.impl.AccountServiceImpl;
-import com.ewallet.service.impl.CardServiceImpl;
 import com.ewallet.service.impl.EWalletBalanceServiceImpl;
 import com.ewallet.service.impl.EWalletUserServiceImpl;
 import com.ewallet.util.LanguageUtil;
@@ -234,14 +233,19 @@ public class walletController extends HttpServlet {
 		String newPinConfirm = request.getParameter("newPin2");
 		Wallet wallet = (Wallet) request.getSession().getAttribute("wallet");
 		Map<String, String> errors = UserWalletValidator.validateForUpdatePin(newPin, newPinConfirm);
-		if(!wallet.getPinHash().equals(currentPin)) {
-			errors.put("curPinErr", "err.curPin.wrong");
+
+		Wallet check = new Wallet(wallet.getPhoneNumber(), currentPin);
+		try {
+			if (eWalletUserService.login(check) == null) {
+				errors.put("curPinErr", "err.curPin.wrong");
+			}
+		} catch (SQLException e) {
+			errors = UserWalletValidator.parseSqlException(e);
 		}
+
 		if(errors.isEmpty()) {
-			wallet = new Wallet(wallet.getWalletId(), wallet.getFullName(), newPin, wallet.getSalt());
-			
 			try {
-				wallet = eWalletUserService.updateUserWallet(wallet);
+				wallet = eWalletUserService.updateUserWalletPin(wallet, newPin);
 			} catch (SQLException e) {
 				errors = UserWalletValidator.parseSqlException(e);
 			}
@@ -287,33 +291,22 @@ public class walletController extends HttpServlet {
 			
 			if(errors.isEmpty() && deletedWallet != null) {
 				
-				boolean deleteWalletBalance = new EWalletBalanceServiceImpl(dataSource).deleteWalletBalanceByWalletId(wallet.getWalletId());
-				
-				boolean updateAccountStatus = new AccountServiceImpl(dataSource).updateAccountStatusByRefereceIdAndTypeId(wallet.getWalletId(), 1);
-				
-				boolean deleteAllCards= new CardServiceImpl(dataSource).deleteAllCardsByWalletId(wallet.getWalletId());
-
-				if(!deleteWalletBalance || !updateAccountStatus || !deleteAllCards) {
-					errors.put("deletedError", "err.delete.failed");
-					
-				}else {
-					boolean isDeleted = false;
-					try {
-						isDeleted = eWalletUserService.deleteUserWallet(wallet, deletedWallet);
-					} catch (SQLException e) {
-						errors = UserWalletValidator.parseSqlException(e);
-					}
+				boolean isDeleted = false;
+				try {
+					isDeleted = eWalletUserService.deleteUserWallet(wallet, deletedWallet);
+				} catch (SQLException e) {
+					errors = UserWalletValidator.parseSqlException(e);
+				}
 	
-					if(errors.isEmpty() && isDeleted) {
-						request.getSession().invalidate();
-						try {
-							response.sendRedirect("login.jsp" + LanguageUtil.langQuery(request));
-						} catch (IOException e) {
-							e.printStackTrace();
-						}
-					}else if(isDeleted == false) {
-						errors.put("deletedError", "err.delete.failed");
+				if(errors.isEmpty() && isDeleted) {
+					request.getSession().invalidate();
+					try {
+						response.sendRedirect("login.jsp" + LanguageUtil.langQuery(request));
+					} catch (IOException e) {
+						e.printStackTrace();
 					}
+				}else if(isDeleted == false) {
+					errors.put("deletedError", "err.delete.failed");
 				}
 			}else if(deletedWallet == null) {
 				errors.put("deletedError", "err.login.failed");
