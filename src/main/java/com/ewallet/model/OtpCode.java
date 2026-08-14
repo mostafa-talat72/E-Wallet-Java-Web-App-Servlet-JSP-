@@ -4,20 +4,20 @@ import java.sql.Timestamp;
 import java.util.Objects;
 
 /**
- * Maps to the {@code activation_codes} table. Stores the one-time 6-digit
- * code issued to a wallet for phone-ownership proof, either to activate a new
+ * Maps to the {@code otp_codes} table. Stores the one-time 6-digit code
+ * issued to a wallet for phone-ownership proof, either to activate a new
  * wallet ({@code purpose = "ACTIVATION"}) or to reset a forgotten PIN
  * ({@code purpose = "RESET"}). A code is single-use, expires after
  * {@code expiresAt} and becomes permanently invalid after a maximum number
  * of {@code attempts}.
  */
-public class ActivationCode {
+public class OtpCode {
 
 	// Identity and ownership
 	private Long codeId;
 	private Long walletId;
 
-	// The 6-digit activation payload
+	// The 6-digit OTP payload
 	private String code;
 
 	// What the code authorizes: "ACTIVATION" (new wallet) or "RESET" (forgot PIN)
@@ -32,15 +32,15 @@ public class ActivationCode {
 	private Integer isUsed;
 	private Integer isExpire;
 
-	public ActivationCode() {
+	public OtpCode() {
 	}
 
 	/**
-	 * Creates a new activation code (INSERT) for a wallet; expiry, attempts
-	 * and usage flags are set by the database. Defaults to the "ACTIVATION"
-	 * purpose — the forgot-PIN flow overrides it via {@code setPurpose}.
+	 * Creates a new OTP code (INSERT) for a wallet; expiry, attempts and usage
+	 * flags are set by the database. Defaults to the "ACTIVATION" purpose — the
+	 * forgot-PIN flow overrides it via {@code setPurpose}.
 	 */
-	public ActivationCode(Long walletId, String code) {
+	public OtpCode(Long walletId, String code) {
 		this.walletId = walletId;
 		this.code = code;
 		this.purpose = "ACTIVATION";
@@ -50,7 +50,7 @@ public class ActivationCode {
 	 * Full constructor used when a code row is read back from the database,
 	 * including its purpose, validity window and usage state.
 	 */
-	public ActivationCode(Long codeId, Long walletId, String code, String purpose,
+	public OtpCode(Long codeId, Long walletId, String code, String purpose,
 			Timestamp createdAt, Timestamp expiresAt,
 			Integer attempts, Integer isUsed, Integer isExpire) {
 		this.codeId = codeId;
@@ -138,7 +138,7 @@ public class ActivationCode {
 
 	@Override
 	public String toString() {
-		return "ActivationCode{" +
+		return "OtpCode{" +
 				"codeId=" + codeId +
 				", walletId=" + walletId +
 				", code='" + code + '\'' +
@@ -154,8 +154,8 @@ public class ActivationCode {
 	@Override
 	public boolean equals(Object o) {
 		if (this == o) return true;
-		if (!(o instanceof ActivationCode)) return false;
-		ActivationCode that = (ActivationCode) o;
+		if (!(o instanceof OtpCode)) return false;
+		OtpCode that = (OtpCode) o;
 		return Objects.equals(codeId, that.codeId);
 	}
 

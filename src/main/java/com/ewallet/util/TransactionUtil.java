@@ -19,11 +19,12 @@ public class TransactionUtil {
 	}
 
 	/**
-	 * Returns a random 6-digit activation code. ThreadLocalRandom is used for
-	 * thread-safety and performance; the bound [100_000, 1_000_000) guarantees
-	 * the result always has exactly 6 digits.
+	 * Returns a random 6-digit OTP code (used for wallet activation and
+	 * PIN-reset codes). ThreadLocalRandom is used for thread-safety and
+	 * performance; the bound [100_000, 1_000_000) guarantees the result always
+	 * has exactly 6 digits.
 	 */
-	public static String generateActivationCode() {
+	public static String generateOtpCode() {
 		long code = ThreadLocalRandom.current()
 		            .nextLong(100_000L, 1_000_000L);
 

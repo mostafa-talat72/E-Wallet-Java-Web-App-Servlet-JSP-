@@ -174,7 +174,7 @@ public class EWalletUserServiceImpl implements EWalletUserService {
 				ps.setLong(1, wallet.getWalletId());
 				ps.executeUpdate();
 			}
-			try (PreparedStatement ps = connection.prepareStatement("DELETE FROM activation_codes WHERE wallet_id = ?")) {
+			try (PreparedStatement ps = connection.prepareStatement("DELETE FROM otp_codes WHERE wallet_id = ?")) {
 				ps.setLong(1, wallet.getWalletId());
 				ps.executeUpdate();
 			}

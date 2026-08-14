@@ -16,18 +16,18 @@ import javax.annotation.Resource;
 import javax.sql.DataSource;
 
 import com.ewallet.model.Account;
-import com.ewallet.model.ActivationCode;
+import com.ewallet.model.OtpCode;
 import com.ewallet.model.Wallet;
 import com.ewallet.model.WalletBalance;
 import com.ewallet.service.AccountService;
-import com.ewallet.service.ActivationCodeService;
 import com.ewallet.service.EWalletBalanceService;
 import com.ewallet.service.EWalletUserService;
 import com.ewallet.service.MessageService;
+import com.ewallet.service.OtpCodeService;
 import com.ewallet.service.impl.AccountServiceImpl;
-import com.ewallet.service.impl.ActivationCodeServiceImpl;
 import com.ewallet.service.impl.EWalletBalanceServiceImpl;
 import com.ewallet.service.impl.EWalletUserServiceImpl;
+import com.ewallet.service.impl.OtpCodeServiceImpl;
 import com.ewallet.service.impl.WhatsAppMessageServiceImpl;
 import com.ewallet.util.LanguageUtil;
 import com.ewallet.util.TransactionUtil;
@@ -71,7 +71,7 @@ public class walletController extends HttpServlet {
 	private DataSource dataSource;
 	
 	private EWalletUserService eWalletUserService;
-	private ActivationCodeService activationCodeService;
+	private OtpCodeService otpCodeService;
 	private MessageService messageService;
 
 	
@@ -83,7 +83,7 @@ public class walletController extends HttpServlet {
 	 @Override
     public void init() throws ServletException {
 	 eWalletUserService = new EWalletUserServiceImpl(dataSource);
-	 activationCodeService = new ActivationCodeServiceImpl(dataSource);
+	 otpCodeService = new OtpCodeServiceImpl(dataSource);
 	 messageService = new WhatsAppMessageServiceImpl();
     }
 
@@ -192,15 +192,15 @@ public class walletController extends HttpServlet {
 				// owner to the activation page; the wallet stays locked (status = 0)
 				// until they prove the phone number.
 				try {
-					ActivationCode activationCode = new ActivationCode(newWallet.getWalletId(),
-							TransactionUtil.generateActivationCode());
-					activationCode = activationCodeService.addActivationCode(activationCode);
+					OtpCode otpCode = new OtpCode(newWallet.getWalletId(),
+							TransactionUtil.generateOtpCode());
+					otpCode = otpCodeService.addOtpCode(otpCode);
 					boolean sent = messageService.send(newWallet.getPhoneNumber(),
-							"Your E-Wallet activation code is " + activationCode.getCode());
+							"Your E-Wallet activation code is " + otpCode.getCode());
 					request.getSession().setAttribute("pendingActivationWalletId", newWallet.getWalletId());
 					if (!sent) {
 						// WhatsApp unreachable: still show the code on the page as a fallback.
-						request.getSession().setAttribute("activationFallbackCode", activationCode.getCode());
+						request.getSession().setAttribute("activationFallbackCode", otpCode.getCode());
 					}
 					response.sendRedirect("activate.jsp" + LanguageUtil.langQuery(request));
 				} catch (SQLException e) {
@@ -317,7 +317,7 @@ public class walletController extends HttpServlet {
 			errors.put("codeErr", "err.activation.invalidFormat");
 		} else {
 			try {
-				ActivationCode stored = activationCodeService.getValidActivationCodeByWalletIdAndPurpose(pendingWalletId, "ACTIVATION");
+				OtpCode stored = otpCodeService.getValidOtpCodeByWalletIdAndPurpose(pendingWalletId, "ACTIVATION");
 				if (stored == null) {
 					// No usable code: none was created yet, or its 10-minute window
 					// has passed (expiry is decided by the DB clock in the query).
@@ -328,14 +328,14 @@ public class walletController extends HttpServlet {
 				} else if (!stored.getCode().equals(code)) {
 					// Wrong code: increment the attempts counter and fail.
 					stored.setAttempts(stored.getAttempts() + 1);
-					activationCodeService.updateActivationCodeByWalletIdAndCode(stored);
+					otpCodeService.updateOtpCodeByWalletIdAndCode(stored);
 					errors.put("codeErr", "err.activation.wrong");
 				} else {
 					// Correct code: consume it and unlock the wallet.
 					stored.setAttempts(stored.getAttempts() + 1);
 					stored.setIsUsed(1);
 					stored.setIsExpire(1);
-					activationCodeService.updateActivationCodeByWalletIdAndCode(stored);
+					otpCodeService.updateOtpCodeByWalletIdAndCode(stored);
 
 					Wallet wallet = eWalletUserService.getUserWalletById(pendingWalletId);
 					wallet = eWalletUserService.activateWallet(wallet);
@@ -387,15 +387,15 @@ public class walletController extends HttpServlet {
 		}
 		try {
 			// Invalidate any still-usable activation code so only the new one can be entered.
-			ActivationCode existing = activationCodeService.getValidActivationCodeByWalletIdAndPurpose(pendingWalletId, "ACTIVATION");
+			OtpCode existing = otpCodeService.getValidOtpCodeByWalletIdAndPurpose(pendingWalletId, "ACTIVATION");
 			if (existing != null) {
 				existing.setAttempts(3);
 				existing.setIsUsed(1);
 				existing.setIsExpire(1);
-				activationCodeService.updateActivationCodeByWalletIdAndCode(existing);
+				otpCodeService.updateOtpCodeByWalletIdAndCode(existing);
 			}
-			ActivationCode fresh = new ActivationCode(pendingWalletId, TransactionUtil.generateActivationCode());
-			fresh = activationCodeService.addActivationCode(fresh);
+			OtpCode fresh = new OtpCode(pendingWalletId, TransactionUtil.generateOtpCode());
+			fresh = otpCodeService.addOtpCode(fresh);
 
 			Wallet wallet = eWalletUserService.getUserWalletById(pendingWalletId);
 			if (wallet == null) {
@@ -452,16 +452,16 @@ public class walletController extends HttpServlet {
 				} else {
 					// Invalidate any still-usable RESET code so only the new one can be entered.
 					// (An ACTIVATION code, if any, is left untouched.)
-					ActivationCode existing = activationCodeService.getValidActivationCodeByWalletIdAndPurpose(wallet.getWalletId(), "RESET");
+					OtpCode existing = otpCodeService.getValidOtpCodeByWalletIdAndPurpose(wallet.getWalletId(), "RESET");
 					if (existing != null) {
 						existing.setAttempts(3);
 						existing.setIsUsed(1);
 						existing.setIsExpire(1);
-						activationCodeService.updateActivationCodeByWalletIdAndCode(existing);
+						otpCodeService.updateOtpCodeByWalletIdAndCode(existing);
 					}
-					ActivationCode resetCode = new ActivationCode(wallet.getWalletId(), TransactionUtil.generateActivationCode());
+					OtpCode resetCode = new OtpCode(wallet.getWalletId(), TransactionUtil.generateOtpCode());
 					resetCode.setPurpose("RESET");
-					resetCode = activationCodeService.addActivationCode(resetCode);
+					resetCode = otpCodeService.addOtpCode(resetCode);
 
 					boolean sent = messageService.send(wallet.getPhoneNumber(),
 							"Your E-Wallet PIN reset code is " + resetCode.getCode());
@@ -519,7 +519,7 @@ public class walletController extends HttpServlet {
 			errors.putAll(UserWalletValidator.validateForUpdatePin(newPin, newPinConfirm));
 			if (errors.isEmpty()) {
 				try {
-					ActivationCode stored = activationCodeService.getValidActivationCodeByWalletIdAndPurpose(pendingResetWalletId, "RESET");
+					OtpCode stored = otpCodeService.getValidOtpCodeByWalletIdAndPurpose(pendingResetWalletId, "RESET");
 					if (stored == null) {
 						// No usable code: none was issued, or its 10-minute window has passed.
 						errors.put("codeErr", "err.reset.expired");
@@ -528,14 +528,14 @@ public class walletController extends HttpServlet {
 					} else if (!stored.getCode().equals(code)) {
 						// Wrong code: increment the attempts counter and fail.
 						stored.setAttempts(stored.getAttempts() + 1);
-						activationCodeService.updateActivationCodeByWalletIdAndCode(stored);
+						otpCodeService.updateOtpCodeByWalletIdAndCode(stored);
 						errors.put("codeErr", "err.reset.wrong");
 					} else {
 						// Correct code: consume it and rotate the PIN.
 						stored.setAttempts(stored.getAttempts() + 1);
 						stored.setIsUsed(1);
 						stored.setIsExpire(1);
-						activationCodeService.updateActivationCodeByWalletIdAndCode(stored);
+						otpCodeService.updateOtpCodeByWalletIdAndCode(stored);
 
 						Wallet wallet = eWalletUserService.getUserWalletById(pendingResetWalletId);
 						wallet = eWalletUserService.updateUserWalletPin(wallet, newPin);

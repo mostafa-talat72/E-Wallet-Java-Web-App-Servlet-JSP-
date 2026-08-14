@@ -99,7 +99,7 @@ src/main/
 │   │   └── atmController.java             # getAllATMs, getATMById
 │   ├── filter/
 │   │   └── AuthFilter.java                # session guard (@WebFilter("/*"))
-│   ├── model/                 # DB-mapped entities (Wallet, Card, ActivationCode, …)
+│   ├── model/                 # DB-mapped entities (Wallet, Card, OtpCode, …)
 │   ├── service/               # service interfaces (+ MessageService for WhatsApp)
 │   ├── service/impl/          # implementations + TransactionExecutor (atomic money ops)
 │   │                          # + WhatsAppMessageServiceImpl (HTTP client for the sidecar)
@@ -117,7 +117,7 @@ src/main/
     │   └── lib/               # ojdbc8.jar, jstl-1.2.jar, javax.mail, activation
 whatsapp-bot/                  # Node sidecar: personal-WhatsApp QR link + POST /send
 sql/
-├── schema.sql                 # Oracle DDL (all tables incl. activation_codes)
+├── schema.sql                 # Oracle DDL (all tables incl. otp_codes)
 └── seed-data.sql              # lookup data, demo ATMs and their type-3 accounts
 ```
 
@@ -128,8 +128,8 @@ sql/
 > The schema ships as Oracle DDL in `sql/schema.sql`; `sql/seed-data.sql` populates the
 > lookup tables, demo ATMs and their type-3 accounts. Constraint names referenced by the
 > validators: `CHECK_CARD_NUMBER_LENGTH`, `CHECK_CVV_LENGTH`, `UQ_CARD_NUMBER_WALLET`,
-> `UQ_WALLET_CODE`, `UQ_ACTIVATION_WALLET_CODE`, plus the FKs from `transaction_codes`
-> and `activation_codes` into `wallets`.
+> `UQ_WALLET_CODE`, `UQ_OTP_WALLET_CODE`, plus the FKs from `transaction_codes`
+> and `otp_codes` into `wallets`.
 
 | Table | Purpose | Key columns |
 |---|---|---|
@@ -142,7 +142,7 @@ sql/
 | `transaction_types` | 1 = Deposit, 2 = Withdraw, 3 = Transfer | `transaction_type_id`, `name` |
 | `transaction_status` | 1 = Pending, 2 = Success, 3 = Failed, 4 = Cancelled, 5 = Expired | `transaction_status_id`, `name` |
 | `transaction_codes` | One-time ATM OTP codes | `code_id`, `wallet_id`, `code` (6 digits, unique per wallet), `amount`, `created_at`, `expires_at`, `attempts`, `is_used`, `is_expire` |
-| `activation_codes` | One-time 6-digit verification codes (wallet activation + PIN reset) | `code_id`, `wallet_id`, `code` (6 digits, unique per wallet), **`purpose`** (`ACTIVATION` / `RESET`), `created_at`, `expires_at`, `attempts`, `is_used`, `is_expire` |
+| `otp_codes` | One-time 6-digit verification codes (wallet activation + PIN reset) | `code_id`, `wallet_id`, `code` (6 digits, unique per wallet), **`purpose`** (`ACTIVATION` / `RESET`), `created_at`, `expires_at`, `attempts`, `is_used`, `is_expire` |
 | `atms` | Registered ATM machines | `atm_id`, `atm_name`, `atm_location`, `mapX`, `mapY`, `status` |
 
 ### Why an `accounts` layer?
@@ -192,7 +192,7 @@ Insufficient balance returns the i18n error `err.amount.insufficient` (transfer)
 ### 3. Wallet activation (phone-ownership proof)
 - New wallets are created **inactive** (`status = 0` — changed DDL default and
   explicit in `signup`), so a new registration can never log in until activated.
-- Signup issues a 6-digit code into `activation_codes` (10-minute expiry, max
+- Signup issues a 6-digit code into `otp_codes` (10-minute expiry, max
   3 attempts, unique per wallet) and sends it on WhatsApp through the sidecar.
 - `action=activate` verifies the code (format → still-valid row → attempts →
   match), consumes it and flips `wallets.status` to 1. "Valid" is decided by the
@@ -205,7 +205,7 @@ Insufficient balance returns the i18n error `err.amount.insufficient` (transfer)
   fresh one (fresh attempts counter).
 - **Forgot PIN** mirrors the activation flow: `forgot-pin.jsp` asks for the
   registered phone number, the controller issues a 6-digit reset code (same
-  `activation_codes` table with `purpose = 'RESET'`, same 10-minute expiry and
+  `otp_codes` table with `purpose = 'RESET'`, same 10-minute expiry and
   attempts rules) and sends it on WhatsApp with the same on-screen fallback;
   `forgot-pin-code.jsp` verifies the code and rotates the PIN via
   `updateUserWalletPin` (fresh salt + SHA-256 hash). Expiry is again decided by
@@ -338,7 +338,7 @@ sqlplus ewallet/password@localhost:1521/XE @sql/schema.sql
 sqlplus ewallet/password@localhost:1521/XE @sql/seed-data.sql
 ```
 
-`schema.sql` creates every table (including `activation_codes`) and
+`schema.sql` creates every table (including `otp_codes`) and
 `seed-data.sql` inserts the lookup rows (account types, transaction types,
 transaction statuses), three demo ATMs and one type-3 account per ATM.
 
