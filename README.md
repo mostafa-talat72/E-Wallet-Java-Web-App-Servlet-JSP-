@@ -28,13 +28,16 @@ A full **mobile-wallet simulator** built with classic Java EE technologies: **Se
 |---|---|
 | **Wallet accounts** | Signup with phone number + national ID + PIN, login, profile update, change PIN, delete account (atomic cascade). |
 | **Wallet activation** | New wallets start **inactive** (status 0): a 6-digit code is sent to the owner's WhatsApp (free, via a local Baileys sidecar using a personal WhatsApp account), and the wallet unlocks only after the code is entered (`activate.jsp`). Login is blocked for inactive wallets. |
+| **Forgot PIN** | Public self-service PIN reset: `forgot-pin.jsp` verifies the registered phone, issues a `RESET`-purpose OTP code (same 10-minute expiry / attempts rules as activation) and `forgot-pin-code.jsp` rotates the PIN after the code is verified. |
 | **Cards** | Add / delete bank cards (16-digit number, CVV, expiry), list saved cards, add money to the wallet from a card. |
 | **Transfer** | Send money to any registered wallet by phone, with a 0.1% fee and an optional note. |
 | **ATM OTP codes** | Generate a one-time 6-figure code for a given amount; the code has a 10-minute countdown, is single-use and is consumed atomically. |
 | **ATM machine** | A public self-service kiosk simulation (`atm/atm-machine.jsp`) where a user enters phone + OTP + amount to **deposit** or **withdraw** cash from a specific ATM. |
 | **ATM map** | Find ATMs by location (`atm/atm-map.jsp`). |
-| **Transactions history** | Full list with type filters (all / deposit / withdraw / transfer), text search, and **client-side pagination** (8 rows/page, page windows with ellipsis). |
-| **i18n + RTL** | English / Arabic with full RTL layout, persisted via `?lang=en|ar` in the session; every message lives in `messages*.properties` bundles. |
+| **Transactions history** | Full list with type filters (all / deposit / withdraw / transfer), text search, and **client-side pagination** (8 rows/page, page windows with ellipsis). Every row carries a human-readable description: "Card •••• •••• •••• 1234" for card deposits, "From X to Y" for transfers without a note, and the ATM name for ATM deposit/withdraw. |
+| **Session freshness** | Nav links route through `walletController?action=getUserWalletUpdates&redirect=<page>`, which re-reads the wallet (and balance) from the DB and forwards — the dashboard, send/add-money and ATM pages never show stale balances. |
+| **i18n + RTL** | English / Arabic with full RTL layout, persisted via `?lang=en|ar` in the session; every message lives in `messages*.properties` bundles (UTF-8). The chosen language survives logout / account deletion (read before the session is invalidated). |
+| **Responsive layout** | On small screens the fixed sidebar collapses into an off-canvas drawer released by the topbar menu button (slide-in from the inline side: right in RTL, left in LTR — closed by a second tap or by tapping the dimmed overlay / any empty area). |
 | **Session security** | `AuthFilter` protects every page except the public ones (login, register, activate, error, ATM pages). |
 
 ---
@@ -250,7 +253,8 @@ All controllers are mapped with `@WebServlet` and use `doGet` → `doPost`.
 | `updateUserWallet` | POST | Update full name |
 | `updateUserWalletPin` | POST | Verify current PIN, generate new salt+hash via service |
 | `deleteUserWallet` | POST | Cascade-delete wallet (atomic) and invalidate session |
-| `logout` | GET/POST | Invalidate session → `login.jsp` |
+| `getUserWalletUpdates` | GET | Re-reads wallet + balance into the session, then forwards to `?redirect=<page>` |
+| `logout` | GET/POST | Invalidate session → `login.jsp` (language preserved) |
 
 ### `transactionController`
 | action | Method | Description |
@@ -318,6 +322,12 @@ Shared UI lives in `WEB-INF/partials/` (`head`, `navbar`, `footer`, `page-head`,
   `messages_ar.properties`.
 - Controllers carry the language across redirects with `LanguageUtil.langQuery(request)`
   (returns `?lang=en` or `?lang=ar`).
+- `logout` and `deleteUserWallet` read the language **before** `invalidate()` so the
+  login page reopens in the same language.
+- Historical quirk fixed: `messages_ar.properties` was stored double-encoded (the UTF-8
+  bytes were interpreted as CP1252 and re-encoded), which rendered Arabic as mojibake —
+  e.g. `ØªØ­ÙˆÙŠÙ„Ø§Øª` instead of `تحويلات`. The bundles were recovered (CP1252 → UTF-8
+  round-trip, lossless) and are now plain UTF-8.
 - The ATM machine has its own JS dictionaries (`atm.js`: `T("…")` with EN/AR maps) and the
   server error codes (`err.atm.*`) are mapped through `errKey()` to those dictionaries.
 
