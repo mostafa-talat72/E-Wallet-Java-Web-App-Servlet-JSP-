@@ -85,7 +85,7 @@
             		pageContext.setAttribute("txType", type);
             			String typeDesign = transactionStatusId == 1? "bi-arrow-down-left" : transactionStatusId == 2? "bi-cash-stack": " bi-send";
 
-            			BigDecimal amount = transactions.get(i).getAmount();
+            			BigDecimal amount = transactions.get(i).getAmount().add(transactions.get(i).getFees());
             			String inOrOut = "in";
             			String from = wallet.getPhoneNumber(), to = wallet.getPhoneNumber();
             			if(toOrFromNames.get(i).getValue().equals("to")){
