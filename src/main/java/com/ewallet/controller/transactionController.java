@@ -16,6 +16,7 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.sql.DataSource;
 
+import com.ewallet.model.ATM;
 import com.ewallet.model.Account;
 import com.ewallet.model.Card;
 import com.ewallet.model.Transaction;
@@ -151,7 +152,7 @@ private TransactionService transactionService;
 				// The card must belong to the logged-in wallet.
 				Card card = new CardServiceImpl(dataSource).getCardByWalletIdAndCardNumber(wallet.getWalletId(), cardNumber);
 				if (card != null) {
-					String transactionReference = transactionExecutor.addMoney(wallet.getWalletId(), card.getCardId(), amount);
+					String transactionReference = transactionExecutor.addMoney(wallet.getWalletId(), card.getCardId(),cardNumber, amount);
 					WalletBalance newBalance = new EWalletBalanceServiceImpl(dataSource).getWalletBalanceByWalletId(wallet.getWalletId());
 					if (newBalance != null) {
 						// Keep the session balance up to date and expose the receipt data to the JSP.
@@ -220,6 +221,9 @@ private TransactionService transactionService;
 					// Verify the sender's PIN through a login check before moving money.
 					Wallet checkWalletExist = new EWalletUserServiceImpl(dataSource).login(new Wallet(wallet.getPhoneNumber(), pin));
 					if (checkWalletExist != null) {
+						if(note.isEmpty()) {
+							note = "From "+ wallet.getPhoneNumber() + " to " + recipientPhone;
+						}
 						String transactionReference = transactionExecutor.transfer(
 								wallet.getWalletId(), recipientWallet.getWalletId(), amount, note);
 						WalletBalance currWalletBalance = new EWalletBalanceServiceImpl(dataSource).getWalletBalanceByWalletId(wallet.getWalletId());
@@ -281,13 +285,13 @@ private void deposit(HttpServletRequest request, HttpServletResponse response) {
 		        String phone    = request.getParameter("phone");       
 		        String code     = request.getParameter("code");       
 		        BigDecimal amount = new BigDecimal(request.getParameter("amount"));
-
+		        ATM atm = new ATMServiceImpl(dataSource).getATMById(atmId);
 		        // Resolve the wallet from the phone number; an unknown number is rejected.
 		        Wallet wallet = new EWalletUserServiceImpl(dataSource).getUserWalletByPhoneNumber(phone);
 		        if(wallet==null) {
 		        	throw new TransactionExecutor.TxException("err.atm.invalid_code");
 		        }
-		        String transactionReference = transactionExecutor.atmDeposit(atmId, wallet.getWalletId(), code, amount);
+		        String transactionReference = transactionExecutor.atmDeposit(atmId, wallet.getWalletId(), code, amount, atm.getAtmName());
 		        // Success: return the received amount and the transaction reference as JSON.
 		        response.setContentType("application/json;charset=UTF-8");
 		        response.getWriter().write("{\"ok\":true,\"amount\":"+amount +",\"ref\":\"" + transactionReference +"\"}");
@@ -323,13 +327,13 @@ private void deposit(HttpServletRequest request, HttpServletResponse response) {
 	        String phone    = request.getParameter("phone");       
 	        String code     = request.getParameter("code");       
 	        BigDecimal amount = new BigDecimal(request.getParameter("amount"));
-
+	        ATM atm = new ATMServiceImpl(dataSource).getATMById(atmId);
 	        // Resolve the wallet from the phone number; an unknown number is rejected.
 	        Wallet wallet = new EWalletUserServiceImpl(dataSource).getUserWalletByPhoneNumber(phone);
 	        if(wallet==null) {
 	        	throw new TransactionExecutor.TxException("err.atm.invalid_code");
 	        }
-	        String transactionReference = transactionExecutor.atmWithdraw(atmId, wallet.getWalletId(), code, amount);
+	        String transactionReference = transactionExecutor.atmWithdraw(atmId, wallet.getWalletId(), code, amount, atm.getAtmName());
 	        // Success: return the dispensed amount and the transaction reference as JSON.
 	        response.setContentType("application/json;charset=UTF-8");
 	        response.getWriter().write("{\"ok\":true,\"amount\":"+ amount +",\"ref\":\"" + transactionReference +"\"}");
@@ -381,17 +385,17 @@ private void deposit(HttpServletRequest request, HttpServletResponse response) {
 				if(otherAccount.getAccountTypeId() == 1) {
 					// Account type 1: counterparty is another wallet, show its phone number.
 					try {
-						toOrFromNames.add(Map.entry(new EWalletUserServiceImpl(dataSource).getUserWalletById(otherAccount.getReferenceId()).getPhoneNumber(),toOrfrom));
+						toOrFromNames.add(Map.entry(otherAccount.getStatus() == 0? transaction.getDescription() : new EWalletUserServiceImpl(dataSource).getUserWalletById(otherAccount.getReferenceId()).getPhoneNumber(),toOrfrom));
 					} catch (SQLException e) {
 						// TODO Auto-generated catch block
 						e.printStackTrace();
 					}
 				}else if(otherAccount.getAccountTypeId() == 2) {
 					// Account type 2: counterparty is a card, show it masked with the last 4 digits.
-					toOrFromNames.add(Map.entry("Card •••• •••• •••• " + new CardServiceImpl(dataSource).getCardByCardId(otherAccount.getReferenceId()).getCardNumber().substring(12),toOrfrom));
+					toOrFromNames.add(Map.entry(otherAccount.getStatus() == 0? transaction.getDescription() : "Card •••• •••• •••• " + new CardServiceImpl(dataSource).getCardByCardId(otherAccount.getReferenceId()).getCardNumber().substring(12),toOrfrom));
 				} else {
 					// Otherwise the counterparty is an ATM, show its name.
-					toOrFromNames.add(Map.entry(new ATMServiceImpl(dataSource).getATMById(otherAccount.getReferenceId()).getAtmName(),toOrfrom));
+					toOrFromNames.add(Map.entry(otherAccount.getStatus() == 0? transaction.getDescription() : new ATMServiceImpl(dataSource).getATMById(otherAccount.getReferenceId()).getAtmName(),toOrfrom));
 				}
 			}
 			

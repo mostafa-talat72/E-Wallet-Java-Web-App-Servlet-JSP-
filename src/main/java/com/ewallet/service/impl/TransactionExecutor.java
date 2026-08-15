@@ -46,7 +46,7 @@ public class TransactionExecutor {
 		this.codeService = new TransactionCodeServiceImpl(dataSource);
 	}
 
-	public String addMoney(long walletId, long cardId, BigDecimal amount) throws TxException {
+	public String addMoney(long walletId, long cardId,String cardNumber, BigDecimal amount) throws TxException {
 		Connection conn = null;
 		try {
 			conn = dataSource.getConnection();
@@ -63,7 +63,7 @@ public class TransactionExecutor {
 			}
 
 			String ref = "TX-" + TransactionUtil.generateTransactionCode();
-			insertTransaction(conn, from.getAccountId(), to.getAccountId(), 1L, amount, BigDecimal.ZERO, ref, "");
+			insertTransaction(conn, from.getAccountId(), to.getAccountId(), 1L, amount, BigDecimal.ZERO, ref, "Card •••• •••• •••• " + cardNumber.substring(12));
 			updateBalance(conn, walletId, balance.add(amount));
 
 			conn.commit();
@@ -97,7 +97,8 @@ public class TransactionExecutor {
 			if (senderBalance.compareTo(amount.add(fees)) < 0) {
 				throw new TxException("err.amount.insufficient");
 			}
-
+			
+		
 			String ref = "TX-" + TransactionUtil.generateTransactionCode();
 			insertTransaction(conn, from.getAccountId(), to.getAccountId(), 3L, amount, fees, ref, description);
 			updateBalance(conn, fromWalletId, senderBalance.subtract(amount.add(fees)));
@@ -114,8 +115,9 @@ public class TransactionExecutor {
 		}
 	}
 
-	public String atmDeposit(long atmId, long walletId, String enteredCode, BigDecimal amount) throws TxException {
+	public String atmDeposit(long atmId, long walletId, String enteredCode, BigDecimal amount, String atmName) throws TxException {
 		TransactionCode txCode = codeService.getValidTransactionCodeByWalletIdAndCode(walletId);
+		System.out.println(enteredCode +" "+ txCode.getCode());
 		if (txCode == null) {
 			throw new TxException("err.atm.codeNotFound");
 		}
@@ -139,7 +141,7 @@ public class TransactionExecutor {
 			}
 
 			String ref = "TX-" + TransactionUtil.generateTransactionCode();
-			insertTransaction(conn, from.getAccountId(), to.getAccountId(), 1L, amount, BigDecimal.ZERO, ref, "");
+			insertTransaction(conn, from.getAccountId(), to.getAccountId(), 1L, amount, BigDecimal.ZERO, ref, atmName);
 			updateBalance(conn, walletId, balance.add(amount));
 			if (!markCodeUsed(conn, walletId, enteredCode)) {
 				throw new TxException("err.atm.codeUsed");
@@ -156,7 +158,7 @@ public class TransactionExecutor {
 		}
 	}
 
-	public String atmWithdraw(long atmId, long walletId, String enteredCode, BigDecimal amount) throws TxException {
+	public String atmWithdraw(long atmId, long walletId, String enteredCode, BigDecimal amount, String atmName) throws TxException {
 		TransactionCode txCode = codeService.getValidTransactionCodeByWalletIdAndCode(walletId);
 		if (txCode == null) {
 			throw new TxException("err.atm.codeNotFound");
@@ -185,7 +187,7 @@ public class TransactionExecutor {
 			}
 
 			String ref = "TX-" + TransactionUtil.generateTransactionCode();
-			insertTransaction(conn, from.getAccountId(), to.getAccountId(), 2L, amount, fees, ref, "");
+			insertTransaction(conn, from.getAccountId(), to.getAccountId(), 2L, amount, fees, ref, atmName);
 			updateBalance(conn, walletId, balance.subtract(amount.add(fees)));
 			if (!markCodeUsed(conn, walletId, enteredCode)) {
 						throw new TxException("err.atm.codeUsed");

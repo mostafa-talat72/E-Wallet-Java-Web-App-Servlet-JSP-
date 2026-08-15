@@ -21,16 +21,16 @@
   <%-- Main navigation: menu items highlight when activeMenu matches; some entries load data via their controllers first. --%>
     <nav class="sidebar-nav">
     <div class="nav-section-label"><fmt:message key="nav.main"/></div>
-    <a href="/E-Wallet/walletController?action=login" class="nav-link ${activeMenu == 'home' ? 'active' : ''}">
+    <a href="/E-Wallet/walletController?action=getUserWalletUpdates&redirect=home" class="nav-link ${activeMenu == 'home' ? 'active' : ''}">
       <i class="bi bi-grid-1x2-fill"></i><span><fmt:message key="nav.dashboard"/></span>
     </a>
-    <a href="${appURL}send-money.jsp${qLang}" class="nav-link ${activeMenu == 'send' ? 'active' : ''}">
+    <a href="/E-Wallet/walletController?action=getUserWalletUpdates&redirect=send-money" class="nav-link ${activeMenu == 'send' ? 'active' : ''}">
       <i class="bi bi-send-fill"></i><span><fmt:message key="nav.send"/></span>
     </a>
-    <a href="/E-Wallet/cardController?action=getAllCards&redirect=add-money" class="nav-link ${activeMenu == 'add' ? 'active' : ''}">
+    <a href="/E-Wallet/walletController?action=getUserWalletUpdates&redirect=add-money" class="nav-link ${activeMenu == 'add' ? 'active' : ''}">
       <i class="bi bi-plus-circle-fill"></i><span><fmt:message key="nav.add"/></span>
     </a>
-    <a href="${appURL}atmotp.jsp${qLang}"  class="nav-link ${activeMenu == 'withdraw' ? 'active' : ''}">
+    <a href="/E-Wallet/walletController?action=getUserWalletUpdates&redirect=atmotp"  class="nav-link ${activeMenu == 'withdraw' ? 'active' : ''}">
       <i class="bi bi-cash-stack"></i><span><fmt:message key="nav.withdraw"/></span>
     </a>
     <div class="nav-section-label"><fmt:message key="nav.account"/></div>

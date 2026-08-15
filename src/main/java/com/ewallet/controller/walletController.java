@@ -49,6 +49,7 @@ import com.ewallet.util.UserWalletValidator;
  *  - updateUserWallet    : updates the wallet user's full name
  *  - updateUserWalletPin : changes the wallet user's 6-digit PIN
  *  - deleteUserWallet    : permanently deletes a wallet user account
+ *  - getUserWalletUpdates: Make the data displayed in the view always up-to-date
  *  - logout              : invalidates the current user session
  *  - (any other/missing) : redirects to the error page
  *
@@ -62,6 +63,7 @@ import com.ewallet.util.UserWalletValidator;
  *  http://localhost:8080/E-Wallet/walletController?action=updateUserWallet
  *  http://localhost:8080/E-Wallet/walletController?action=updateUserWalletPin
  *  http://localhost:8080/E-Wallet/walletController?action=deleteUserWallet
+ *  http://localhost:8080/E-Wallet/walletController?action=getUserWalletUpdates
  *  http://localhost:8080/E-Wallet/walletController?action=logout
  */
 @WebServlet("/walletController")
@@ -130,6 +132,9 @@ public class walletController extends HttpServlet {
 			case "updateUserWalletPin":
 				updateUserWalletPin(request, response);
 			break;
+			case "getUserWalletUpdates":
+				getUserWalletUpdates(request, response);
+			break;
 			case "deleteUserWallet":
 				deleteUserWallet(request, response);
 				break;
@@ -144,7 +149,6 @@ public class walletController extends HttpServlet {
 		
 		
 	}
-
 
 	/**
 	 * POST entry point of the controller.
@@ -701,9 +705,10 @@ public class walletController extends HttpServlet {
 	
 				if(errors.isEmpty() && isDeleted) {
 					// Account deleted: destroy the session and send the user back to login.
-					request.getSession().invalidate();
 					try {
-						response.sendRedirect("login.jsp" + LanguageUtil.langQuery(request));
+						String lang = LanguageUtil.langQuery(request);
+						request.getSession().invalidate();
+						response.sendRedirect("login.jsp" + lang);
 					} catch (IOException e) {
 						e.printStackTrace();
 					}
@@ -729,14 +734,39 @@ public class walletController extends HttpServlet {
 		}
 	}
 	
+
+	private void getUserWalletUpdates(HttpServletRequest request, HttpServletResponse response) {
+		Wallet wallet = (Wallet) request.getSession().getAttribute("wallet");
+		try {
+			wallet = eWalletUserService.getUserWalletById(wallet.getWalletId());
+			request.getSession().setAttribute("wallet", wallet);
+			WalletBalance walletBalance = new EWalletBalanceServiceImpl(dataSource).getWalletBalanceByWalletId(wallet.getWalletId());
+			request.getSession().setAttribute("walletBalance", walletBalance);
+			
+			String redirect = request.getParameter("redirect");
+			request.getRequestDispatcher(redirect + ".jsp" + LanguageUtil.langQuery(request)).forward(request, response);
+		} catch (SQLException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}catch (ServletException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+	}
+
+	
 	/**
 	 * Handles the "logout" action: ends the current user session
 	 * and redirects to the login page.
 	 */
 	private void logout(HttpServletRequest request, HttpServletResponse response) {
-		request.getSession().invalidate();
 		try {
-			response.sendRedirect("login.jsp" + LanguageUtil.langQuery(request));
+			String lang = LanguageUtil.langQuery(request);
+			request.getSession().invalidate();
+			response.sendRedirect("login.jsp" + lang);
 		} catch (IOException e) {
 			e.printStackTrace();
 		}

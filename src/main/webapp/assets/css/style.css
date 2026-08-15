@@ -599,8 +599,8 @@ table a{color:var(--primary);font-weight:700}
   :root{--sidebar-w:232px}
 }
 @media (max-width:991.98px){
-  .sidebar{transform:translateX(100%)}
-  [dir="rtl"] .sidebar{transform:translateX(-100%)}
+  .sidebar{transform:translateX(-100%)}
+  [dir="rtl"] .sidebar{transform:translateX(100%)}
   .sidebar.open{transform:translateX(0)!important}
   .sidebar-overlay.show{display:block}
   .main-content{margin-inline-start:0}
